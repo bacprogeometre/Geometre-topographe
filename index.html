@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Relevé express – Géomètre-topographe</title>
+<title>Géomètre topographe</title>
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: #cfe3f0; font-family: "Segoe UI", Arial, sans-serif; color: #1d2733; }
@@ -65,7 +65,9 @@
     display: grid; grid-template-columns: 36px 1fr; column-gap: 8px; align-items: start; user-select: none;
   }
   .objet:hover { border-color: #f0a46a; }
-  .objet .icone { font-size: 26px; line-height: 1; }
+  .objet .icone { line-height: 0; }
+  .objet .icone svg { width: 38px; height: 38px; }
+  .petiteIcone svg { width: 18px; height: 18px; vertical-align: -4px; margin-right: 3px; }
   .objet .nom { font-weight: 700; font-size: 14px; }
   .objet .poids { font-size: 12px; color: #4a5866; }
   .objet .usage { grid-column: 1 / -1; font-size: 12px; color: #4a5866; margin-top: 6px; }
@@ -74,7 +76,7 @@
   .objet.tropLourd { opacity: .45; cursor: not-allowed; }
   .ligneCharge { display: flex; gap: 12px; align-items: center; }
   .ligneCharge .barre { flex: 1; height: 14px; border-radius: 7px; }
-  .boutons { display: flex; gap: 10px; margin-top: 6px; }
+  .boutons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
   .boutons .bouton { flex: 2; }
   .bouton.secondaire { flex: 1; background: #e6ebef; color: #1d2733; }
   .bouton.secondaire:hover { background: #d5dce2; }
@@ -128,6 +130,15 @@
   #instPanneau table { border-collapse: collapse; font-size: 13px; margin: 6px 0; }
   #instPanneau td, #instPanneau th { border: 1px solid #dfe5ea; padding: 3px 7px; text-align: right; font-variant-numeric: tabular-nums; }
   #instPanneau th { background: #f2f5f7; }
+
+  /* --- Tutoriel --- */
+  #tutoriel .carte { max-width: 620px; }
+  #tutoriel h1 { font-size: 24px; margin-bottom: 12px; }
+  #tutoContenu { font-size: 15px; line-height: 1.55; min-height: 190px; }
+  #tutoContenu ul { padding-left: 20px; margin: 6px 0; }
+  #tutoPoints { display: flex; justify-content: center; gap: 8px; margin: 14px 0 6px; }
+  #tutoPoints span { width: 10px; height: 10px; border-radius: 50%; background: #d5dce2; }
+  #tutoPoints span.actif { background: #e35d00; }
 
   /* --- Carnet de terrain --- */
   #carnet .carte { max-width: 900px; max-height: 94vh; overflow-y: auto; }
@@ -184,12 +195,12 @@
 <body>
 
 <!-- Écran de chargement (remplacé par un message d'erreur si le CDN est inaccessible) -->
-<div id="chargement" class="ecran"><div class="carte"><h1>Relevé express</h1><h2 id="chargementTexte">Chargement du moteur 3D…</h2></div></div>
+<div id="chargement" class="ecran"><div class="carte"><h1>Géomètre topographe</h1><h2 id="chargementTexte">Chargement du moteur 3D…</h2></div></div>
 
 <!-- Écran d'accueil -->
 <div id="accueil" class="ecran cache">
   <div class="carte">
-    <h1>Relevé express</h1>
+    <h1>Géomètre topographe</h1>
     <h2>Une journée sur le terrain avec un géomètre-topographe<br><small style="font-size:12px;color:#8a96a2">Lycée Pierre Mendès France (PMF)</small></h2>
     <table>
       <tr><td><kbd>Z</kbd> <kbd>Q</kbd> <kbd>S</kbd> <kbd>D</kbd> ou flèches</td><td>Se déplacer</td></tr>
@@ -209,13 +220,16 @@
       <label><input type="radio" name="niveau" value="expert"><b>Expert</b>Tolérances serrées, la bulle bouge vite.</label>
     </div>
     <p id="meilleurAccueil" class="note" style="margin-top:-6px"></p>
-    <button id="boutonCommencer" class="bouton">Commencer</button>
+    <div class="boutons">
+      <button id="boutonTutoriel" class="bouton secondaire">Tutoriel puis commencer</button>
+      <button id="boutonCommencer" class="bouton">Commencer</button>
+    </div>
     <p class="note">Aucune donnée n'est envoyée sur Internet : seul ton meilleur score est gardé sur cet ordinateur.</p>
   </div>
 </div>
 
 <!-- Interface de jeu -->
-<div id="titre" class="panneau">Relevé express<span>Étape C : missions</span></div>
+<div id="titre" class="panneau">Géomètre topographe<span>Étape C : missions</span></div>
 <div id="aide" class="panneau">
   <kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> se déplacer · <kbd>Maj</kbd> courir<br>
   Clic maintenu : caméra · Molette : zoom<br>
@@ -241,16 +255,31 @@
   <div class="carte">
     <h1>Ordre de mission</h1>
     <div class="entete">
-      <b>Cabinet de géomètres-experts « Relevé express »</b> <small>— stage des élèves du lycée PMF</small><br>
+      <b>Cabinet de géomètres-experts « Géomètre topographe »</b> <small>— stage des élèves du lycée PMF</small><br>
       Chantier : lieu-dit « Les Hauts du Moulin » (commune fictive)<br>
       Système : RGF93 / Lambert 93 — altitudes NGF-IGN69
     </div>
     <div id="listeMissions"></div>
     <div class="boutons">
+      <button id="boutonTutoOrdre" class="bouton secondaire">Revoir le tutoriel</button>
       <button id="boutonBilanDepuisOrdre" class="bouton secondaire">Terminer la journée : mon bilan (B)</button>
       <button id="boutonFermerOrdre" class="bouton">Compris ! (M)</button>
     </div>
     <p class="note">Les missions peuvent être faites dans n'importe quel ordre. Les balises de couleur indiquent les points à mesurer, et la boussole montre la direction du plus proche.</p>
+  </div>
+</div>
+
+<!-- Tutoriel (facultatif) -->
+<div id="tutoriel" class="ecran cache">
+  <div class="carte">
+    <h1 id="tutoTitre"></h1>
+    <div id="tutoContenu"></div>
+    <div id="tutoPoints"></div>
+    <div class="boutons">
+      <button id="tutoPasser" class="bouton secondaire">Passer (Échap)</button>
+      <button id="tutoPrecedent" class="bouton secondaire">← Précédent</button>
+      <button id="tutoSuivant" class="bouton">Suivant (→)</button>
+    </div>
   </div>
 </div>
 
@@ -1196,7 +1225,7 @@ function creerCamion() {
   const tex = texteTexture([
     { texte: 'GÉOMÈTRE-TOPOGRAPHE', police: 'bold 120px Arial', couleur: '#e35d00', y: 105 },
     { texte: 'Bornage · Topographie · Implantation', police: '54px Arial', couleur: '#24527a', y: 205 },
-    { texte: 'PMF · Lycée Pierre Mendès France', police: 'bold 50px Arial', couleur: '#1d2733', y: 300 },
+    { texte: 'Lycée Pierre Mendès France', police: 'bold 50px Arial', couleur: '#1d2733', y: 300 },
   ], 1024, 360, '#f4f5f6');
   for (const cote of [1, -1]) {
     const p = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1.2), new THREE.MeshLambertMaterial({ map: tex }));
@@ -1204,12 +1233,6 @@ function creerCamion() {
     if (cote < 0) p.rotation.y = Math.PI;
     g.add(p);
   }
-  // Petit « PMF » sur les portes arrière
-  const texArriere = texteTexture([{ texte: 'PMF', police: 'bold 90px Arial', couleur: '#24527a', y: 70 }], 256, 128, '#f4f5f6');
-  const arriere = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.3), new THREE.MeshLambertMaterial({ map: texArriere }));
-  arriere.position.set(-2.411, 2.1, 0);
-  arriere.rotation.y = -Math.PI / 2;
-  g.add(arriere);
   scene.add(g);
   obstaclesBoites.push({ minX: x - 2.45, maxX: x + 3.1, minZ: z - 1.05, maxZ: z + 1.05 });
 }
@@ -1348,18 +1371,102 @@ const geometre = creerGeometre();
 // === MATÉRIEL (catalogue du camion) ===
 // =====================================================================
 const CHARGE_MAX = 15;   // kg
+// Icônes dessinées (SVG) fidèles au matériel réel et aux couleurs des objets 3D du jeu
+const svgIcone = contenu => `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">${contenu}</svg>`;
+const ICONES = {
+  // Niveau automatique vu de profil : corps jaune, objectif, oculaire, viseur, sur son embase à vis calantes
+  niveau: svgIcone(`
+    <rect x="11" y="40" width="26" height="3" rx="1.5" fill="#555"/>
+    <rect x="13" y="37" width="4" height="4" fill="#777"/><rect x="31" y="37" width="4" height="4" fill="#777"/>
+    <rect x="17" y="35" width="14" height="4" rx="1" fill="#333"/>
+    <rect x="8" y="21" width="30" height="14" rx="4" fill="#f2c200" stroke="#9c7c00" stroke-width="1"/>
+    <rect x="37" y="24" width="6" height="8" rx="1" fill="#333"/><circle cx="43" cy="28" r="3.2" fill="#6fa8c8" stroke="#222"/>
+    <rect x="3" y="25" width="6" height="6" rx="1.5" fill="#333"/>
+    <rect x="15" y="16" width="15" height="5" rx="2" fill="#333"/>
+    <circle cx="22" cy="28" r="3" fill="#333"/><circle cx="22" cy="28" r="1.4" fill="#888"/>`),
+  // Trépied en bois : tête en aluminium, trois pieds, sabots en acier
+  trepied: svgIcone(`
+    <rect x="13" y="5" width="22" height="5" rx="1.5" fill="#9aa0a6" stroke="#666"/>
+    <path d="M17 10 L6 43" stroke="#d9a441" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M24 10 L24 44" stroke="#c99434" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M31 10 L42 43" stroke="#d9a441" stroke-width="3.5" stroke-linecap="round"/>
+    <rect x="9" y="24" width="5" height="3" fill="#333" transform="rotate(18 11 25)"/><rect x="22" y="25" width="5" height="3" fill="#333"/><rect x="34" y="24" width="5" height="3" fill="#333" transform="rotate(-18 36 25)"/>
+    <path d="M6 43 L5 47 M24 44 L24 47 M42 43 L43 47" stroke="#555" stroke-width="2"/>`),
+  // Mire en E : rouge en haut (1 à 2 m), noire en bas (0 à 1 m)
+  mire: svgIcone(`
+    <rect x="17" y="2" width="14" height="44" rx="1" fill="#fbfbf2" stroke="#999"/>
+    <g fill="#c41e1e"><rect x="19" y="4" width="2" height="8"/><rect x="19" y="4" width="8" height="2"/><rect x="19" y="7" width="8" height="2"/><rect x="19" y="10" width="8" height="2"/>
+    <rect x="27" y="15" width="2" height="8"/><rect x="21" y="15" width="8" height="2"/><rect x="21" y="18" width="8" height="2"/><rect x="21" y="21" width="8" height="2"/></g>
+    <g fill="#111"><rect x="19" y="26" width="2" height="8"/><rect x="19" y="26" width="8" height="2"/><rect x="19" y="29" width="8" height="2"/><rect x="19" y="32" width="8" height="2"/>
+    <rect x="27" y="37" width="2" height="8"/><rect x="21" y="37" width="8" height="2"/><rect x="21" y="40" width="8" height="2"/><rect x="21" y="43" width="8" height="2"/></g>`),
+  // Récepteur GNSS (antenne en dôme) sur sa canne, avec le carnet électronique fixé
+  gnss: svgIcone(`
+    <path d="M24 16 L24 45" stroke="#9aa0a6" stroke-width="2.5"/><path d="M24 45 L24 47.5" stroke="#555" stroke-width="1.5"/>
+    <rect x="13" y="12" width="22" height="4" rx="1" fill="#2b4c7e"/>
+    <path d="M14 12 Q24 0 34 12 Z" fill="#f2f2f2" stroke="#8a8a8a"/>
+    <rect x="26" y="25" width="10" height="14" rx="2" fill="#333"/><rect x="27.5" y="27" width="7" height="5" fill="#9fd3e8"/>
+    <circle cx="29" cy="35" r="0.9" fill="#bbb"/><circle cx="32" cy="35" r="0.9" fill="#bbb"/><path d="M24 31 L26 31" stroke="#333" stroke-width="2"/>`),
+  // Station totale vue de face : embase, boîtier avec écran, montants, lunette, poignée
+  station: svgIcone(`
+    <rect x="12" y="42" width="24" height="3" rx="1" fill="#555"/>
+    <rect x="9" y="33" width="30" height="9" rx="2" fill="#e8732c" stroke="#a24d14"/>
+    <rect x="14" y="35" width="11" height="5" fill="#9fd3e8" stroke="#333" stroke-width="0.6"/><circle cx="30" cy="37.5" r="1" fill="#333"/><circle cx="34" cy="37.5" r="1" fill="#333"/>
+    <rect x="10" y="12" width="7" height="21" rx="2" fill="#e8732c" stroke="#a24d14"/><rect x="31" y="12" width="7" height="21" rx="2" fill="#e8732c" stroke="#a24d14"/>
+    <rect x="17" y="16" width="14" height="14" rx="3" fill="#333"/><circle cx="24" cy="23" r="4.5" fill="#6fa8c8" stroke="#111"/>
+    <rect x="19" y="7" width="10" height="4" rx="1.5" fill="#333"/><path d="M17 9 L19 9 M29 9 L31 9" stroke="#333" stroke-width="2"/>`),
+  // Prisme circulaire dans son support jaune, sur canne avec nivelle
+  prisme: svgIcone(`
+    <path d="M24 22 L24 45" stroke="#9aa0a6" stroke-width="2.5"/><path d="M24 45 L24 47.5" stroke="#555" stroke-width="1.5"/>
+    <circle cx="24" cy="13" r="10" fill="#f2b705" stroke="#a37a00"/>
+    <circle cx="24" cy="13" r="6" fill="#5b8fa8" stroke="#2c4b5c"/>
+    <path d="M24 7 L24 19 M18.8 10 L29.2 16 M18.8 16 L29.2 10" stroke="#a9d4e8" stroke-width="0.8"/>
+    <circle cx="27" cy="33" r="2.2" fill="#7ac143" stroke="#333" stroke-width="0.6"/>`),
+  // Décamètre : boîtier rond avec manivelle, ruban gradué déroulé
+  decametre: svgIcone(`
+    <circle cx="19" cy="21" r="14" fill="#f5d000" stroke="#a88f00" stroke-width="1.5"/>
+    <circle cx="19" cy="21" r="4" fill="#333"/><path d="M19 21 L28 13" stroke="#333" stroke-width="2"/><circle cx="28" cy="13" r="2" fill="#333"/>
+    <rect x="26" y="31" width="20" height="6" fill="#fff3a6" stroke="#a88f00"/>
+    <path d="M29 31 L29 34 M32 31 L32 33 M35 31 L35 34 M38 31 L38 33 M41 31 L41 34 M44 31 L44 33" stroke="#111" stroke-width="0.8"/>
+    <rect x="45" y="30" width="2" height="8" fill="#555"/>`),
+  // Télémètre laser à main : boîtier, écran, clavier, faisceau
+  telemetre: svgIcone(`
+    <path d="M24 2 L24 8" stroke="#ff2a2a" stroke-width="1.5" stroke-dasharray="2 1.5"/>
+    <rect x="14" y="8" width="20" height="36" rx="4" fill="#c0392b" stroke="#7d2219"/>
+    <rect x="17" y="12" width="14" height="9" rx="1" fill="#b9f5c3" stroke="#333" stroke-width="0.6"/>
+    <path d="M19 16 L29 16" stroke="#2d5c35" stroke-width="1.5"/>
+    <circle cx="24" cy="28" r="3.2" fill="#333"/><circle cx="19" cy="36" r="1.6" fill="#333"/><circle cx="24" cy="36" r="1.6" fill="#333"/><circle cx="29" cy="36" r="1.6" fill="#333"/>`),
+  // Carnet de terrain à spirale avec crayon
+  carnet: svgIcone(`
+    <rect x="11" y="5" width="26" height="38" rx="2" fill="#2e7d32" stroke="#1b4d1e"/>
+    <rect x="16" y="10" width="17" height="7" rx="1" fill="#f4f1e6"/>
+    <g fill="none" stroke="#bbb" stroke-width="1.5">${[9, 15, 21, 27, 33, 39].map(y => `<circle cx="11" cy="${y}" r="2"/>`).join('')}</g>
+    <path d="M18 13 L31 13" stroke="#555" stroke-width="1"/>
+    <path d="M30 44 L42 22" stroke="#e0a800" stroke-width="3.5"/><path d="M42 22 L43.5 19" stroke="#333" stroke-width="1.5"/>`),
+  // Trois jalons rouge et blanc, pointe en acier
+  jalons: svgIcone([14, 24, 34].map(x => `
+    ${[0, 1, 2, 3, 4].map(k => `<rect x="${x - 2}" y="${4 + k * 8}" width="4" height="8" fill="${k % 2 ? '#f5f5f5' : '#d42020'}" stroke="#999" stroke-width="0.3"/>`).join('')}
+    <path d="M${x - 2} 44 L${x} 47.5 L${x + 2} 44 Z" fill="#555"/>`).join('')),
+  // Piquets en bois et massette
+  piquets: svgIcone(`
+    <path d="M9 8 L15 8 L15 36 L12 42 L9 36 Z" fill="#c08a4b" stroke="#7a5428"/>
+    <path d="M18 12 L24 12 L24 38 L21 44 L18 38 Z" fill="#c08a4b" stroke="#7a5428"/>
+    <rect x="9" y="8" width="6" height="3" fill="#d62828"/><rect x="18" y="12" width="6" height="3" fill="#d62828"/>
+    <path d="M30 44 L39 17" stroke="#8b5a2b" stroke-width="3.5" stroke-linecap="round"/>
+    <rect x="31" y="9" width="16" height="9" rx="1.5" fill="#333" transform="rotate(19 39 13.5)"/>`),
+};
+
 const MATERIEL = [
-  { id: 'niveau',    icone: '🔭', nom: 'Niveau automatique', poids: 2.5, usage: 'Nivellement direct : mesure de dénivelées par visée horizontale sur une mire.' },
-  { id: 'trepied',   icone: '🔺', nom: 'Trépied', poids: 4.0, usage: 'Support stable pour le niveau ou la station totale.' },
-  { id: 'mire',      icone: '📏', nom: 'Mire (4 m)', poids: 2.5, usage: 'Règle graduée en centimètres, posée verticalement sur le point et lue au niveau.' },
-  { id: 'gnss',      icone: '🛰️', nom: 'Récepteur GNSS + canne', poids: 3.5, usage: 'Coordonnées E, N, H en temps réel (RTK), précision centimétrique en ciel dégagé.' },
-  { id: 'station',   icone: '🎯', nom: 'Station totale', poids: 5.5, usage: 'Mesure d\'angles horizontaux et verticaux et de distances, avec ou sans réflecteur.' },
-  { id: 'prisme',    icone: '💎', nom: 'Prisme + canne', poids: 2.0, usage: 'Réflecteur visé par la station totale pour mesurer une distance précise (facultatif pour le château d\'eau).' },
-  { id: 'decametre', icone: '🌀', nom: 'Décamètre (ruban 30 m)', poids: 0.5, usage: 'Mesure directe de distances courtes (chaînage).' },
-  { id: 'telemetre', icone: '🔦', nom: 'Télémètre laser', poids: 0.3, usage: 'Mesure rapide d\'une distance courte en visant une surface.' },
-  { id: 'carnet',    icone: '📒', nom: 'Carnet de terrain', poids: 0.2, usage: 'Indispensable pour noter les mesures et les croquis.' },
-  { id: 'jalons',    icone: '🚩', nom: 'Jalons (×3)', poids: 2.0, usage: 'Matérialiser des alignements et signaler des points de loin.' },
-  { id: 'piquets',   icone: '🔨', nom: 'Piquets + massette', poids: 3.0, usage: 'Matérialiser des points au sol (implantation).' },
+  { id: 'niveau',    icone: ICONES.niveau, nom: 'Niveau automatique', poids: 2.5, usage: 'Nivellement direct : mesure de dénivelées par visée horizontale sur une mire.' },
+  { id: 'trepied',   icone: ICONES.trepied, nom: 'Trépied', poids: 4.0, usage: 'Support stable pour le niveau ou la station totale.' },
+  { id: 'mire',      icone: ICONES.mire, nom: 'Mire (4 m)', poids: 2.5, usage: 'Règle graduée en centimètres, posée verticalement sur le point et lue au niveau.' },
+  { id: 'gnss',      icone: ICONES.gnss, nom: 'Récepteur GNSS + canne', poids: 3.5, usage: 'Coordonnées E, N, H en temps réel (RTK), précision centimétrique en ciel dégagé.' },
+  { id: 'station',   icone: ICONES.station, nom: 'Station totale', poids: 5.5, usage: 'Mesure d\'angles horizontaux et verticaux et de distances, avec ou sans réflecteur.' },
+  { id: 'prisme',    icone: ICONES.prisme, nom: 'Prisme + canne', poids: 2.0, usage: 'Réflecteur visé par la station totale pour mesurer une distance précise (facultatif pour le château d\'eau).' },
+  { id: 'decametre', icone: ICONES.decametre, nom: 'Décamètre (ruban 30 m)', poids: 0.5, usage: 'Mesure directe de distances courtes (chaînage).' },
+  { id: 'telemetre', icone: ICONES.telemetre, nom: 'Télémètre laser', poids: 0.3, usage: 'Mesure rapide d\'une distance courte en visant une surface.' },
+  { id: 'carnet',    icone: ICONES.carnet, nom: 'Carnet de terrain', poids: 0.2, usage: 'Indispensable pour noter les mesures et les croquis.' },
+  { id: 'jalons',    icone: ICONES.jalons, nom: 'Jalons (×3)', poids: 2.0, usage: 'Matérialiser des alignements et signaler des points de loin.' },
+  { id: 'piquets',   icone: ICONES.piquets, nom: 'Piquets + massette', poids: 3.0, usage: 'Matérialiser des points au sol (implantation).' },
 ];
 const OBJET = Object.fromEntries(MATERIEL.map(o => [o.id, o]));
 
@@ -3220,14 +3327,17 @@ function majMiniCarte() {
 // =====================================================================
 // === ÉTAT DU JEU ET COMMANDES ===
 // =====================================================================
-// Départ entre le camion et le repère, regard tourné vers le chemin
-const directionDepart = new THREE.Vector2(18, -20).normalize();
+// Départ à côté du camion (E 652 032,6 m, N 6 862 026,6 m), regard vers le nord-nord-est (gisement ≈ 25 gon) :
+// on voit dès le début le camion, l'église, le hameau, le château d'eau et les balises (vue choisie par le professeur)
+const GISEMENT_DEPART = 15 * Math.PI / 200;   // un peu tourné vers le camion : il reste visible sur les écrans étroits
+const directionDepart = new THREE.Vector2(Math.sin(GISEMENT_DEPART), -Math.cos(GISEMENT_DEPART));
+const CAMERA_DEPART = { pitch: 0.12, distance: 8 };
 const joueur = {
-  x: -67, z: 64,
+  x: -67.4, z: 73.4,
   angle: Math.atan2(directionDepart.x, directionDepart.y),
   phaseMarche: 0, amplitudeMarche: 0,
 };
-const cam = { yaw: Math.atan2(-directionDepart.x, -directionDepart.y), pitch: 0.35, distance: 7 };
+const cam = { yaw: Math.atan2(-directionDepart.x, -directionDepart.y), ...CAMERA_DEPART };
 let enJeu = false;
 
 const touches = new Set();
@@ -3401,7 +3511,7 @@ function majInventaire() {
   document.getElementById('camionCharge').textContent = `Charge : ${kg(charge)} / ${CHARGE_MAX} kg · vitesse ${Math.round(facteurCharge() * 100)} %`;
   // Panneau « Matériel emporté »
   document.getElementById('sacListe').innerHTML = sac.size
-    ? MATERIEL.filter(o => sac.has(o.id)).map(o => `${o.icone} ${o.nom}`).join('<br>')
+    ? MATERIEL.filter(o => sac.has(o.id)).map(o => `<span class="petiteIcone">${o.icone}</span>${o.nom}`).join('<br>')
     : '<span class="vide">Rien pour l\'instant : va au camion.</span>';
   majBarre(document.getElementById('sacBarre'), charge);
   document.getElementById('sacTexte').textContent = `${kg(charge)} / ${CHARGE_MAX} kg · vitesse ${Math.round(facteurCharge() * 100)} %`;
@@ -3574,17 +3684,97 @@ function majMeilleurAccueil() {
 }
 document.querySelectorAll('input[name=niveau]').forEach(r => r.addEventListener('change', majMeilleurAccueil));
 majMeilleurAccueil();
-document.getElementById('boutonCommencer').addEventListener('click', () => {
+function demarrerPartie() {
   document.getElementById('accueil').classList.add('cache');
   niveau = NIVEAUX[document.querySelector('input[name=niveau]:checked').value];
   debutPartie = performance.now();
   document.querySelector('#titre span').textContent = `Niveau ${niveau.nom}`;
   cam.yaw = Math.atan2(-directionDepart.x, -directionDepart.y);
+  Object.assign(cam, CAMERA_DEPART);
   enJeu = true;
   majCoordonnees();
   ouvrirOrdre();   // l'ordre de mission s'affiche au départ
   afficherMessage('Lis ton ordre de mission, puis choisis ton matériel au camion.', 4000);
-});
+}
+document.getElementById('boutonCommencer').addEventListener('click', demarrerPartie);
+
+// =====================================================================
+// === TUTORIEL (facultatif, au début ou depuis l'ordre de mission) ===
+// =====================================================================
+const ETAPES_TUTO = [
+  { titre: 'Bienvenue sur le chantier !', html: `
+    <p>Tu es <b>géomètre-topographe</b>. Ton cabinet t'envoie sur un chantier pour réaliser <b>8 missions de mesure</b> (et un bonus) :
+    nivellements, bornes au GNSS, hauteurs, distances, profondeur…</p>
+    <p>À la fin de la journée, tu obtiens une <b>note sur 20</b>. Elle dépend de ta précision, du matériel choisi, de ta méthode et de ton temps.</p>` },
+  { titre: '1. Se déplacer', html: `
+    <p><kbd>Z</kbd> <kbd>Q</kbd> <kbd>S</kbd> <kbd>D</kbd> (ou les flèches) : marcher · <kbd>Maj</kbd> maintenue : courir.</p>
+    <p><b>Clic maintenu + souris</b> : tourner la caméra · <b>molette</b> : zoomer.</p>
+    <p>En haut, la <b>boussole</b> indique la direction et la distance du point le plus proche à mesurer (avec son gisement en grades).
+    En bas à droite, la <b>mini-carte</b> montre tous les points : ils passent au vert une fois mesurés.</p>` },
+  { titre: '2. Lire l\'ordre de mission', html: `
+    <p>Touche <kbd>M</kbd> : l'<b>ordre de mission</b> liste les missions, la méthode à suivre et les tolérances de ton niveau.</p>
+    <p>Sur le terrain, chaque point à mesurer est signalé par une <b>balise de couleur</b> (une couleur par mission).</p>` },
+  { titre: '3. Choisir son matériel au camion', html: `
+    <p>Va au <b>camion blanc</b> et appuie sur <kbd>E</kbd>. Clique sur le matériel pour le prendre ou le reposer.</p>
+    <p>⚖️ Charge maximale : <b>15 kg</b>. Plus tu es chargé, plus tu marches lentement.</p>
+    <p>📒 N'oublie jamais le <b>carnet de terrain</b> : sans lui, tes mesures sont perdues ! Avec un matériel inadapté, le jeu t'explique pourquoi et tu perds des points.</p>` },
+  { titre: '4. Mesurer', html: `
+    <p>Près d'un point à mesurer, appuie sur <kbd>E</kbd>. Pour un <b>nivellement</b>, installe le niveau <b>entre</b> deux points avec <kbd>T</kbd> :
+    un bandeau t'indique si l'emplacement convient (portées, visées).</p>
+    <p>Chaque mesure suit les gestes du métier :</p>
+    <ul><li><b>Calage</b> : ramène la bulle dans le cercle avec les flèches, puis <kbd>Entrée</kbd>.</li>
+    <li><b>Visée</b> : tourne la lunette (flèches ou souris, <kbd>Maj</kbd> = fin) et fais la mise au point (molette).
+    Station totale : <kbd>Espace</kbd> passe du <b>collimateur</b> (vue large) à la <b>lunette</b>.</li>
+    <li><b>Lecture</b> : tape ta valeur, puis <kbd>Entrée</kbd>. <kbd>Échap</kbd> abandonne la mesure.</li></ul>` },
+  { titre: '5. Lire la mire', html: `
+    <p>Lis la mire au <b>fil niveleur</b>, le trait horizontal central :</p>
+    <ul><li>le <b>chiffre</b> donne les décimètres : sa base est posée sur le trait du décimètre (« 09 » = 0,90 m) ;</li>
+    <li>compte les <b>centimètres</b> depuis la base du chiffre (petits carrés, puis dents du <b>E</b> : 1 cm chacune) ;</li>
+    <li>estime les <b>millimètres</b>.</li></ul>
+    <p>Couleurs : <b>noir</b> de 0 à 1 m, <b style="color:#c41e1e">rouge</b> de 1 à 2 m, noir de 2 à 3 m, rouge de 3 à 4 m.</p>` },
+  { titre: '6. Carnet et bilan', html: `
+    <p><kbd>C</kbd> : le <b>carnet de terrain</b> regroupe toutes tes mesures et tes calculs (il s'imprime).</p>
+    <p><kbd>B</kbd> : le <b>bilan</b> avec ta note sur 20, mission par mission, tes points forts et des conseils.</p>
+    <p><kbd>H</kbd> affiche ou masque l'aide des touches. Bonne journée sur le terrain ! 🦺</p>` },
+];
+let tutoOuvert = false, etapeTuto = 0, tutoAvantPartie = false;
+
+function afficherEtapeTuto() {
+  const e = ETAPES_TUTO[etapeTuto], derniere = etapeTuto === ETAPES_TUTO.length - 1;
+  document.getElementById('tutoTitre').textContent = e.titre;
+  document.getElementById('tutoContenu').innerHTML = e.html;
+  document.getElementById('tutoPoints').innerHTML = ETAPES_TUTO.map((_, i) => `<span class="${i === etapeTuto ? 'actif' : ''}"></span>`).join('');
+  document.getElementById('tutoPrecedent').disabled = etapeTuto === 0;
+  document.getElementById('tutoSuivant').textContent = derniere ? (tutoAvantPartie ? 'C\'est parti ! (Entrée)' : 'Retour au terrain (Entrée)') : 'Suivant (→)';
+}
+function ouvrirTuto(avantPartie) {
+  tutoOuvert = true; tutoAvantPartie = avantPartie; etapeTuto = 0;
+  touches.clear();
+  document.getElementById('accueil').classList.add('cache');
+  if (ordreOuvert) fermerOrdre();
+  document.getElementById('tutoriel').classList.remove('cache');
+  afficherEtapeTuto();
+}
+function fermerTuto() {
+  tutoOuvert = false;
+  document.getElementById('tutoriel').classList.add('cache');
+  if (tutoAvantPartie) demarrerPartie();
+}
+function tutoSuivant() { if (etapeTuto < ETAPES_TUTO.length - 1) { etapeTuto++; afficherEtapeTuto(); } else fermerTuto(); }
+function tutoPrecedent() { if (etapeTuto > 0) { etapeTuto--; afficherEtapeTuto(); } }
+document.getElementById('boutonTutoriel').addEventListener('click', () => ouvrirTuto(true));
+document.getElementById('boutonTutoOrdre').addEventListener('click', () => ouvrirTuto(false));
+document.getElementById('tutoSuivant').addEventListener('click', tutoSuivant);
+document.getElementById('tutoPrecedent').addEventListener('click', tutoPrecedent);
+document.getElementById('tutoPasser').addEventListener('click', fermerTuto);
+// Clavier du tutoriel (fonctionne aussi avant le début de la partie)
+addEventListener('keydown', e => {
+  if (!tutoOuvert) return;
+  if (e.code === 'ArrowRight' || e.code === 'Enter' || e.code === 'NumpadEnter') { e.preventDefault(); tutoSuivant(); }
+  else if (e.code === 'ArrowLeft') { e.preventDefault(); tutoPrecedent(); }
+  else if (e.code === 'Escape') fermerTuto();
+  e.stopImmediatePropagation();
+}, true);
 majCoordonnees();
 boucle();
 </script>
