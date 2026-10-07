@@ -1390,8 +1390,9 @@ function textureMire() {
   for (let dm = 0; dm < 16; dm++) {
     g.fillStyle = dm < 10 ? '#111' : '#c41e1e';
     const y = cmv => 512 - cmv * 3.2, gauche = dm % 2 === 1, xb = gauche ? 3 : 23;
-    g.fillRect(xb, y(dm * 10 + 5), 6, 16);
-    for (const c of [0, 2, 4]) g.fillRect(gauche ? 3 : 7, y(dm * 10 + c + 1), 22, 3.2);
+    g.fillRect(xb, y(dm * 10 + 10), 6, 16);                                          // E dans les 5 cm du haut
+    for (const c of [5, 7, 9]) g.fillRect(gauche ? 3 : 7, y(dm * 10 + c + 1), 22, 3.2);
+    for (const c of [1, 3]) g.fillRect(xb, y(dm * 10 + c + 1), 6, 3.2);
   }
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
@@ -2005,11 +2006,11 @@ const DEMI_CHAMP_NIVEAU = 0.45 * Math.PI / 180;  // demi-champ de la lunette (ra
 const echelleMire = D => Math.min(900, RAYON_VUE / (D * Math.tan(DEMI_CHAMP_NIVEAU)));
 
 function dessinerMire(mx, pxParM, valeurCentre) {
-  // Mire « en E » classique (largeur 8 cm) :
-  //  - chaque décimètre commence par un E de 5 cm : barre verticale + 3 dents de 1 cm (0-1, 2-3, 4-5 cm),
-  //    orienté alternativement « E » (barre à gauche) et « Ǝ » (barre à droite) ;
-  //  - le chiffre du décimètre (« 09 » = 0,9 m, « 10 » = 1,0 m) est écrit dans les 5 cm juste SOUS son E,
-  //    avec deux petits carrés de 1 cm (6-7 et 8-9 cm du décimètre précédent) côté barre ;
+  // Mire « en E » classique (largeur 8 cm), convention validée par le professeur :
+  //  - le chiffre du décimètre (« 09 » = 0,90 m) a sa BASE posée sur le trait du décimètre :
+  //    il occupe les 5 premiers cm (0,90 → 0,95), avec deux petits carrés de 1 cm (1-2 et 3-4 cm) côté barre ;
+  //  - le E occupe les 5 cm du haut (0,95 → 1,00) : barre verticale + 3 dents de 1 cm (5-6, 7-8, 9-10 cm),
+  //    orienté alternativement « E » (barre à gauche, décimètres impairs) et « Ǝ » (barre à droite, pairs) ;
   //  - noir de 0 à 1 m, rouge de 1 à 2 m, noir de 2 à 3 m, rouge de 3 à 4 m.
   const largeur = 0.08 * pxParM, x0 = mx - largeur / 2;
   const yDe = v => CY - (v - valeurCentre) * pxParM;
@@ -2024,20 +2025,18 @@ function dessinerMire(mx, pxParM, valeurCentre) {
     if (d < 0 || d >= 40) continue;
     const base = d / 10, gauche = d % 2 === 1;           // décimètres impairs : E (barre à gauche) ; pairs : Ǝ
     ctx.fillStyle = couleurMetre(base);
-    // Le E : barre de 5 cm et 3 dents de 1 cm
     const [xBarre1, xBarre2] = gauche ? [0.008, 0.022] : [0.058, 0.072];
     const [xDent1, xDent2] = gauche ? [0.008, 0.066] : [0.014, 0.072];
-    bande(base, base + 0.05, xBarre1, xBarre2);
-    for (const c of [0, 2, 4]) bande(base + c / 100, base + (c + 1) / 100, xDent1, xDent2);
-    // Sous le E : le chiffre du décimètre et deux carrés centimétriques côté barre
-    if (d > 0) {
-      bande(base - 0.04, base - 0.03, xBarre1, xBarre2);
-      bande(base - 0.02, base - 0.01, xBarre1, xBarre2);
-      if (taille >= 5) {
-        ctx.textAlign = 'center';
-        ctx.fillText(String(d).padStart(2, '0'), x0 + (gauche ? 0.047 : 0.033) * pxParM, yDe(base - 0.045));
-      }
+    // Les 5 premiers cm : le chiffre (base sur le trait) et deux carrés centimétriques côté barre
+    bande(base + 0.01, base + 0.02, xBarre1, xBarre2);
+    bande(base + 0.03, base + 0.04, xBarre1, xBarre2);
+    if (d > 0 && taille >= 5) {
+      ctx.textAlign = 'center';
+      ctx.fillText(String(d).padStart(2, '0'), x0 + (gauche ? 0.047 : 0.033) * pxParM, yDe(base + 0.006));
     }
+    // Les 5 cm du haut : le E (barre de 5 cm et 3 dents de 1 cm)
+    bande(base + 0.05, base + 0.10, xBarre1, xBarre2);
+    for (const c of [5, 7, 9]) bande(base + c / 100, base + (c + 1) / 100, xDent1, xDent2);
   }
 }
 
@@ -2065,7 +2064,7 @@ function lectureMire({ titre, D, valeur }) {
   elInstPanneau.innerHTML = `
     <p>1. Tourne la lunette vers la mire : <kbd>←</kbd> <kbd>→</kbd> ou glisser la souris (<kbd>Maj</kbd> = fin).</p>
     <p>2. Fais la mise au point : molette ou <kbd>↑</kbd> <kbd>↓</kbd>.</p>
-    <p>3. Lis la mire au <b>fil niveleur</b> (trait horizontal central) : chaque décimètre commence par un <b>E</b> de 5 cm (dents de 1 cm), avec son chiffre juste en dessous (« 09 » = 0,9 m). Repère le dernier E sous le fil, compte les centimètres (dents du E, puis les deux petits carrés), puis estime les millimètres.</p>
+    <p>3. Lis la mire au <b>fil niveleur</b> (trait horizontal central) : le <b>chiffre</b> a sa base posée sur le trait de son décimètre (« 09 » = 0,90 m) et occupe les 5 premiers cm ; le <b>E</b> occupe les 5 cm du haut (dents de 1 cm). Repère le dernier chiffre sous le fil, compte les centimètres depuis sa base (petits carrés, puis dents du E), puis estime les millimètres.</p>
     <p><small><b>Couleurs :</b> <span style="color:#111">noir de 0 à 1 m</span>, <span style="color:#c41e1e">rouge de 1 à 2 m</span>, <span style="color:#111">noir de 2 à 3 m</span>, <span style="color:#c41e1e">rouge de 3 à 4 m</span>. Exemple : « 13 » en rouge = 1,3 m.</small></p>
     ${niveau === NIVEAUX.decouverte ? `<p><small>Portée ≈ ${fr(D, 1)} m.</small></p>` : ''}
     <p><b>Lecture (m) :</b> <input type="text" id="champLecture" placeholder="ex. 1,437" autocomplete="off"></p>
@@ -2178,8 +2177,9 @@ function textureMire4m() {
   for (let d = 0; d < 40; d++) {
     g.fillStyle = Math.floor(d / 10) % 2 ? '#c41e1e' : '#111';
     const y = cmv => 1024 - cmv * 2.56, gauche = d % 2 === 1, xb = gauche ? 3 : 23;
-    g.fillRect(xb, y(d * 10 + 5), 6, 5 * 2.56);
-    for (const c of [0, 2, 4]) g.fillRect(gauche ? 3 : 7, y(d * 10 + c + 1), 22, 2.56);
+    g.fillRect(xb, y(d * 10 + 10), 6, 5 * 2.56);                                       // E dans les 5 cm du haut
+    for (const c of [5, 7, 9]) g.fillRect(gauche ? 3 : 7, y(d * 10 + c + 1), 22, 2.56);
+    for (const c of [1, 3]) g.fillRect(xb, y(d * 10 + c + 1), 6, 2.56);              // carrés à côté du chiffre
   }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
   return t;
