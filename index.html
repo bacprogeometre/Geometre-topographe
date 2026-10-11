@@ -131,6 +131,34 @@
   #instPanneau td, #instPanneau th { border: 1px solid #dfe5ea; padding: 3px 7px; text-align: right; font-variant-numeric: tabular-nums; }
   #instPanneau th { background: #f2f5f7; }
 
+  /* --- Détecteur de réseaux --- */
+  #detecteur { bottom: 175px; left: 12px; width: 280px; font-size: 13px; }
+  #detecteur b { color: #f57f17; }
+  #detTexte { font-weight: 700; min-height: 20px; }
+  #detecteur .petitAide { font-size: 12px; color: #4a5866; margin-top: 3px; }
+
+  /* --- Choix des missions (accueil) --- */
+  #accueil .carte { max-height: 94vh; overflow-y: auto; }
+  .choixMissions { border: 1px solid #dfe5ea; border-radius: 10px; padding: 6px 10px; margin: -6px 0 14px; font-size: 13px; }
+  .choixMissions summary { cursor: pointer; color: #4a5866; }
+  .boutonsMissions { display: flex; gap: 6px; margin: 8px 0 6px; }
+  .boutonsMissions button { border: 1px solid #c8d0d8; background: #f2f5f7; border-radius: 6px; padding: 3px 10px; cursor: pointer; font-size: 12px; }
+  #listeChoixMissions label { display: flex; align-items: center; gap: 6px; padding: 2px 0; cursor: pointer; }
+  #listeChoixMissions .pastille { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+
+  /* --- Écran du carnet électronique GNSS --- */
+  .ecranGnss { background: #1f2b22; color: #d6f5dc; border-radius: 8px; padding: 8px 10px; font-family: Consolas, "Courier New", monospace; font-size: 13px; line-height: 1.45; }
+  .enteteGnss { display: flex; justify-content: space-between; color: #8fd19e; border-bottom: 1px solid #3c5443; padding-bottom: 3px; margin-bottom: 5px; font-size: 12px; }
+  .barreRtk { height: 7px; background: #34463a; border-radius: 4px; overflow: hidden; margin: 5px 0; }
+  .barreRtk > div { height: 100%; width: 0; transition: width .3s; }
+  .detailsGnss .petit, .ecranGnss .petit { font-size: 11px; color: #9fbfa6; }
+  .coordGnss { margin-top: 4px; color: #b9f5c3; font-size: 14px; }
+  .snrTitre { font-size: 11px; color: #9fbfa6; margin-top: 6px; }
+  .snr { display: flex; align-items: flex-end; gap: 2px; height: 60px; margin-top: 2px; }
+  .barreSnr { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; min-width: 0; }
+  .barreSnr > div { width: 100%; border-radius: 2px 2px 0 0; }
+  .barreSnr span { font-size: 7px; color: #9fbfa6; writing-mode: vertical-rl; transform: rotate(180deg); margin-top: 1px; }
+
   /* --- Tutoriel --- */
   #tutoriel .carte { max-width: 620px; }
   #tutoriel h1 { font-size: 24px; margin-bottom: 12px; }
@@ -219,6 +247,15 @@
       <label><input type="radio" name="niveau" value="confirme"><b>Confirmé</b>Tolérances de chantier, tu fais certains calculs.</label>
       <label><input type="radio" name="niveau" value="expert"><b>Expert</b>Tolérances serrées, la bulle bouge vite.</label>
     </div>
+    <details id="choixMissions" class="choixMissions">
+      <summary>Missions de la journée : <b id="resumeMissions"></b> (cliquer pour choisir)</summary>
+      <div class="boutonsMissions">
+        <button type="button" data-tirage="tout">Toutes</button>
+        <button type="button" data-tirage="3">3 au hasard</button>
+        <button type="button" data-tirage="5">5 au hasard</button>
+      </div>
+      <div id="listeChoixMissions"></div>
+    </details>
     <p id="meilleurAccueil" class="note" style="margin-top:-6px"></p>
     <div class="boutons">
       <button id="boutonTutoriel" class="bouton secondaire">Tutoriel puis commencer</button>
@@ -235,9 +272,16 @@
   Clic maintenu : caméra · Molette : zoom<br>
   <kbd>E</kbd> interagir · <kbd>T</kbd> installer le niveau<br>
   <kbd>M</kbd> ordre de mission · <kbd>C</kbd> carnet · <kbd>B</kbd> bilan<br>
+  Clic sur la mini-carte : s'y rendre<br>
   <kbd>H</kbd> masquer l'aide
 </div>
 <div id="coords" class="panneau"></div>
+<div id="detecteur" class="panneau cache">
+  <b>Détecteur de réseaux · mode générateur</b>
+  <div class="barre" style="height:14px;margin:4px 0"><div id="detSignal"></div></div>
+  <div id="detTexte"></div>
+  <div class="petitAide"><kbd>R</kbd> marquer à la bombe · tracé révélé : <span id="detCouverture">0 %</span></div>
+</div>
 <div id="sac" class="panneau">
   <b>Matériel emporté</b>
   <div id="sacListe"></div>
@@ -262,6 +306,7 @@
     <div id="listeMissions"></div>
     <div class="boutons">
       <button id="boutonTutoOrdre" class="bouton secondaire">Revoir le tutoriel</button>
+      <button id="boutonSauvegarder" class="bouton secondaire">Sauvegarder</button>
       <button id="boutonBilanDepuisOrdre" class="bouton secondaire">Terminer la journée : mon bilan (B)</button>
       <button id="boutonFermerOrdre" class="bouton">Compris ! (M)</button>
     </div>
@@ -292,6 +337,16 @@
       <button id="boutonImprimerCarnet" class="bouton secondaire">Imprimer</button>
       <button id="boutonFermerCarnet" class="bouton">Fermer (C)</button>
     </div>
+  </div>
+</div>
+
+<!-- Ordinateur du cabinet : transfert des données de terrain -->
+<div id="ordinateur" class="ecran cache">
+  <div class="carte">
+    <h1>TOPO-PC · Transfert des données</h1>
+    <h2>Vide ici le carnet de terrain et la mémoire des appareils : les calculs sont faits et tes missions comptent dans le bilan.</h2>
+    <div id="contenuOrdinateur"></div>
+    <div class="boutons"><button id="boutonFermerOrdinateur" class="bouton secondaire">Fermer (Échap)</button></div>
   </div>
 </div>
 
@@ -329,7 +384,7 @@
 <!-- Écran du camion : choix du matériel -->
 <div id="camion" class="ecran cache">
   <div class="carte">
-    <h1>Le camion</h1>
+    <h1>Matériel du cabinet</h1>
     <h2>Choisis le matériel à emporter. Clique sur un objet pour le prendre ou le reposer.</h2>
     <div class="ligneCharge">
       <div class="barre"><div id="camionBarre"></div></div>
@@ -340,7 +395,7 @@
       <button id="boutonToutDeposer" class="bouton secondaire">Tout reposer</button>
       <button id="boutonFermerCamion" class="bouton">Partir sur le terrain (E)</button>
     </div>
-    <p class="note">Plus le sac est lourd, plus tu marches lentement. Chaque retour au camion pour changer de matériel te fera perdre du temps (et des points, plus tard).</p>
+    <p class="note">Plus le sac est lourd, plus tu marches lentement. Chaque retour au cabinet pour changer de matériel te fait perdre du temps (et des points).</p>
   </div>
 </div>
 <div id="indice" class="panneau cache"></div>
@@ -418,7 +473,11 @@ const versLambert = (x, z) => ({ E: ORIGINE_E + (x + DEMI_CHANTIER), N: ORIGINE_
 
 // Lieux remarquables (toutes les valeurs vraies du jeu sont rangées dans MONDE).
 const MONDE = {
-  camion:     { x: -72, z: 70 },
+  camion:     { x: -72, z: 70 },                  // véhicule du cabinet (conduisible) ; position mise à jour quand il roule
+  // Cabinet de géomètres-experts : départ du jeu. Porte sur la façade Est (x = x + dx).
+  cabinet:    { x: -87, z: 75, dx: 6, dz: 5, hMurs: 4.2 },
+  // Intérieur du cabinet : pièce construite hors du terrain (x = 400) pour ne pas interférer avec le chantier
+  interieur:  { x: 400, z: 0, y: -300, dx: 8, dz: 6, h: 3.2 },
   repere:     { x: -64, z: 62, altitude: 152.347 },  // repère de nivellement NGF (altitude imposée)
   chateauEau: { x: 8, z: -66 },
   // Bâtiments simples : centre (x, z), demi-dimensions (dx, dz), hauteur des murs, couleurs, façade (côté de la porte)
@@ -471,9 +530,15 @@ const rayonEtang = (x, z) => {
     S10: { nom: 'S10', x: -82, z: -50 },                       // station de l'église (altitude connue)
     A: { nom: 'A', ...bordEtang(Math.PI) },                    // bornes de part et d'autre de l'étang
     B: { nom: 'B', ...bordEtang(0) },
-    C: { nom: 'C', x: xr - 6.5, z: zRiv },                     // piquets au bord de la rivière
+    // Largeur de la rivière par le point inaccessible : base C1–C2 sur la rive ouest, jalon D sur la rive est
+    C1: { nom: 'C1', x: xRiviere(zRiv - 8) - 6.5, z: zRiv - 8 },
+    C2: { nom: 'C2', x: xRiviere(zRiv + 8) - 6.5, z: zRiv + 8 },
     D: { nom: 'D', x: xr + 6.5, z: zRiv },
     S20: { nom: 'S20', x: 74, z: 45 },                         // station au bord de la carrière
+    S30: { nom: 'S30', x: MONDE.pont.xOuest - 3, z: MONDE.pont.z + 14 },   // station face au Pont à Mousson (rive ouest)
+    COFFRET: { nom: 'Coffret électrique', x: -40.5, z: 20.5 },             // départ du réseau électrique enterré
+    POSTE: { nom: 'Poste électrique', x: -19, z: 52 },                       // arrivée du réseau
+    DECOLLAGE: { nom: 'Zone de décollage du drone', x: 62, z: 68 },          // à l'ouest de la carrière
     K1: { nom: 'K1', x: 90.5, z: 69.5 },                       // borne sur le bord opposé
     K2: { nom: 'K2', x: C.x + 1.5, z: C.z - 2.5 },             // piquet au fond de la carrière
   };
@@ -503,6 +568,7 @@ function reliefNaturel(x, z) {
 // Plateformes aplanies (aire du camion, bâtiments, château d'eau, étang, carrière)
 const ZONES_PLATES = [
   { x: MONDE.camion.x, z: MONDE.camion.z, r: 12, marge: 12, h: 151.8 },
+  { x: MONDE.cabinet.x, z: MONDE.cabinet.z, r: 9, marge: 8, h: 151.8 },
   { x: MONDE.chateauEau.x, z: MONDE.chateauEau.z, r: 8, marge: 8, h: null },
   { x: MONDE.eglise.x - 2, z: MONDE.eglise.z, r: 11, marge: 7, h: null },
   { x: MONDE.etang.x, z: MONDE.etang.z, r: MONDE.etang.rayon + 6, marge: 8, h: null },
@@ -512,8 +578,9 @@ const ZONES_PLATES = [
 for (const zp of ZONES_PLATES) if (zp.h === null) zp.h = reliefNaturel(zp.x, zp.z);
 
 // Valeurs de référence de l'étang et de la carrière (le terrain est plat autour)
-MONDE.etang.niveau = ZONES_PLATES[3].h - 0.3;              // surface de l'eau, 30 cm sous les berges
-MONDE.carriere.altitudeBord = ZONES_PLATES[4].h;
+const zonePlateEn = lieu => ZONES_PLATES.find(zp => zp.x === lieu.x && zp.z === lieu.z);
+MONDE.etang.niveau = zonePlateEn(MONDE.etang).h - 0.3;              // surface de l'eau, 30 cm sous les berges
+MONDE.carriere.altitudeBord = zonePlateEn(MONDE.carriere).h;
 MONDE.carriere.profondeur = MONDE.carriere.rayons.length * MONDE.carriere.hauteurFront;
 MONDE.carriere.altitudeFond = MONDE.carriere.altitudeBord - MONDE.carriere.profondeur;
 
@@ -797,6 +864,26 @@ function creerPont() {
   pile.position.set(xRiviere(P.z), fond - 0.5 + hPile / 2, P.z);
   scene.add(pile);
 
+  // Valeurs vraies pour la mission « Pont à Mousson » : hauteur du tablier au-dessus de l'eau, au droit de la pile
+  P.nom = 'Pont à Mousson';
+  P.xPile = xRiviere(P.z);
+  P.dessusPile = lerp(P.hOuest, P.hEst, (P.xPile - P.xOuest) / P.longueur);
+  P.eau = niveauEau(P.z);
+  P.hauteurEau = P.dessusPile - P.eau;
+  const hb = P.dessusPile - 0.45 - P.eau, ht = P.dessusPile - P.eau;
+  // Silhouette vue de la station : pile (rayon 0,65 m) puis tablier (vu de profil)
+  P.objetVisee = { x: P.xPile, z: P.z, altitudePied: P.eau, rayonFut: 0.65, hautFace: hb, couleurSol: '#4a86b0', profilPlat: true,
+    profil: [[0, 0.65], [hb, 0.65], [hb, 9], [ht, 9], [ht, 0]] };
+  // Panneau au nom du pont, à l'entrée Ouest
+  const solPanneau = hauteurSol(P.xOuest - 1.5, P.z - 2.4);
+  const poteau = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.8, 6), mat(0x777777));
+  poteau.position.set(P.xOuest - 1.5, solPanneau + 0.9, P.z - 2.4);
+  const panneau = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.45), new THREE.MeshLambertMaterial({ side: THREE.DoubleSide,
+    map: texteTexture([{ texte: 'Pont à Mousson', police: 'bold 64px Arial', couleur: '#ffffff', y: 66 }], 512, 140, '#1f4e8c') }));
+  panneau.position.set(P.xOuest - 1.5, solPanneau + 1.75, P.z - 2.4);
+  panneau.rotation.y = -Math.PI / 2;
+  scene.add(poteau, panneau);
+
   // Les garde-corps empêchent de tomber du pont
   const demi = P.largeur / 2;
   obstaclesBoites.push({ minX: P.xOuest + 0.6, maxX: P.xEst - 0.6, minZ: P.z - demi - 0.1, maxZ: P.z - demi + 0.05 });
@@ -804,7 +891,11 @@ function creerPont() {
 }
 
 // Altitude sur laquelle marche le géomètre : le sol, ou le tablier du pont
+// Le géomètre est-il dans l'intérieur du cabinet (pièce construite hors du terrain, vers x = 400) ?
+const estInterieur = x => x > 300;
+
 function altitudeMarche(x, z) {
+  if (estInterieur(x)) return MONDE.interieur.y;   // plancher du cabinet
   const sol = hauteurSol(x, z), P = MONDE.pont;
   if (P.hOuest !== undefined && x >= P.xOuest && x <= P.xEst && Math.abs(z - P.z) <= P.largeur / 2) {
     const tablier = lerp(P.hOuest, P.hEst, (x - P.xOuest) / P.longueur);
@@ -1234,7 +1325,166 @@ function creerCamion() {
     g.add(p);
   }
   scene.add(g);
-  obstaclesBoites.push({ minX: x - 2.45, maxX: x + 3.1, minZ: z - 1.05, maxZ: z + 1.05 });
+  // Le camion est conduisible : obstacle circulaire mis à jour quand il roule (avant du véhicule = axe +x local)
+  MONDE.camion.groupe = g;
+  MONDE.camion.angle = 0;
+  MONDE.camion.obstacle = { x: x + 0.35, z, r: 2.6 };
+  obstaclesCercles.push(MONDE.camion.obstacle);
+}
+
+// =====================================================================
+// === CABINET DE GÉOMÈTRES-EXPERTS (extérieur) ===
+// =====================================================================
+function creerCabinet() {
+  const C = MONDE.cabinet, sol = hauteurSol(C.x, C.z);
+  const g = new THREE.Group();
+  g.position.set(C.x, sol, C.z);
+  const murs = new THREE.Mesh(new THREE.BoxGeometry(C.dx * 2, C.hMurs + 0.5, C.dz * 2), mat(0xeceae4));
+  murs.position.y = (C.hMurs - 0.5) / 2;
+  const toit = new THREE.Mesh(new THREE.BoxGeometry(C.dx * 2 + 0.6, 0.35, C.dz * 2 + 0.6), mat(0x4a5058));
+  toit.position.y = C.hMurs + 0.17;
+  const bandeau = new THREE.Mesh(new THREE.BoxGeometry(C.dx * 2 + 0.04, 0.25, C.dz * 2 + 0.04), mat(0xe35d00));
+  bandeau.position.y = C.hMurs - 0.4;
+  g.add(murs, toit, bandeau);
+  // Façade Est : porte vitrée, fenêtres, enseigne
+  const vitre = mat(0x7fa8c4);
+  const porte = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.3, 1.6), vitre);
+  porte.position.set(C.dx + 0.03, 1.15, 0);
+  const cadre = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.45, 1.8), mat(0x333a40));
+  cadre.position.set(C.dx + 0.01, 1.2, 0);
+  g.add(cadre, porte);
+  for (const fz of [-3.2, 3.2]) {
+    const f = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.4, 2), vitre);
+    f.position.set(C.dx + 0.03, 1.8, fz);
+    g.add(f);
+  }
+  for (const fx of [-3.5, 0, 3.5]) for (const sz of [-1, 1]) {
+    const f = new THREE.Mesh(new THREE.BoxGeometry(2, 1.4, 0.1), vitre);
+    f.position.set(fx, 1.8, sz * (C.dz + 0.03));
+    g.add(f);
+  }
+  const enseigne = new THREE.Mesh(new THREE.PlaneGeometry(7, 0.9), new THREE.MeshLambertMaterial({ map: texteTexture([
+    { texte: 'CABINET DE GÉOMÈTRES-EXPERTS', police: 'bold 70px Arial', couleur: '#1d2733', y: 70 },
+    { texte: 'Géomètre topographe', police: 'italic 46px Georgia, serif', couleur: '#e35d00', y: 140 },
+  ], 1024, 180, '#f7f6f2') }));
+  enseigne.position.set(C.dx + 0.06, 3.2, 0);
+  enseigne.rotation.y = Math.PI / 2;
+  g.add(enseigne);
+  scene.add(g);
+  obstaclesBoites.push({ minX: C.x - C.dx, maxX: C.x + C.dx, minZ: C.z - C.dz, maxZ: C.z + C.dz });
+  C.porte = { x: C.x + C.dx + 1.3, z: C.z };   // point d'entrée, devant la porte
+}
+
+// =====================================================================
+// === CABINET DE GÉOMÈTRES-EXPERTS (intérieur) ===
+// =====================================================================
+// La pièce est construite loin du chantier (x = 400, y = -300) : on y entre par la porte du cabinet.
+function creerInterieurCabinet() {
+  const I = MONDE.interieur;
+  const g = new THREE.Group();
+  g.position.set(I.x, I.y, I.z);
+  const add = (geo, couleur, x, y, z, obstacle) => {
+    const m = new THREE.Mesh(geo, typeof couleur === 'number' ? mat(couleur) : couleur);
+    m.position.set(x, y, z); g.add(m);
+    if (obstacle) {
+      const p = geo.parameters;
+      obstaclesBoites.push({ minX: I.x + x - p.width / 2, maxX: I.x + x + p.width / 2, minZ: I.z + z - p.depth / 2, maxZ: I.z + z + p.depth / 2 });
+    }
+    return m;
+  };
+  // Pièce : sol, murs et plafond vus de l'intérieur
+  const mur = new THREE.MeshLambertMaterial({ color: 0xf1ede4, side: THREE.BackSide });
+  const piece = new THREE.Mesh(new THREE.BoxGeometry(I.dx * 2, I.h, I.dz * 2), [mur, mur,
+    new THREE.MeshLambertMaterial({ color: 0xfafafa, side: THREE.BackSide }),
+    new THREE.MeshLambertMaterial({ color: 0xb08a5a, side: THREE.BackSide }), mur, mur]);
+  piece.position.y = I.h / 2;
+  g.add(piece);
+  const plinthe = new THREE.MeshLambertMaterial({ color: 0x6d5a45 });
+  // Étagères de matériel (mur Nord)
+  const metal = 0x7d858c;
+  for (const ex of [-5, -1.8, 1.4]) {
+    for (const px of [-1.4, 1.4]) add(new THREE.BoxGeometry(0.08, 2.4, 0.6), metal, ex + px, 1.2, -I.dz + 0.4);
+    for (const py of [0.15, 0.85, 1.55, 2.25]) add(new THREE.BoxGeometry(2.9, 0.05, 0.6), 0xa9b0b6, ex, py, -I.dz + 0.4);
+  }
+  obstaclesBoites.push({ minX: I.x - 6.5, maxX: I.x + 2.9, minZ: I.z - I.dz, maxZ: I.z - I.dz + 0.75 });
+  // Matériel rangé : mallettes (niveau jaune, station orange, GNSS bleue), batteries, carnets, prismes, rubans
+  const objets = [
+    [0xf2c200, -5.8, 0.33, 0.5, 0.3], [0xf2c200, -5.1, 0.33, 0.5, 0.3], [0xe8732c, -4.3, 0.38, 0.6, 0.4],
+    [0xe8732c, -2.6, 0.38, 0.6, 0.4], [0x2b4c7e, -1.8, 0.33, 0.5, 0.3], [0x2b4c7e, -1.1, 0.33, 0.5, 0.3],
+    [0x2b2f33, -5.6, 1.0, 0.25, 0.15], [0x2b2f33, -5.2, 1.0, 0.25, 0.15], [0x2b2f33, -4.8, 1.0, 0.25, 0.15],
+    [0x2e7d32, -2.8, 0.95, 0.3, 0.1], [0x2e7d32, -2.4, 0.95, 0.3, 0.1], [0xf5d000, -1.2, 1.0, 0.3, 0.2],
+    [0xc0392b, -0.6, 0.95, 0.15, 0.12], [0xf2b705, 0.6, 1.0, 0.3, 0.3], [0xf2b705, 1.2, 1.0, 0.3, 0.3],
+    [0x5e4a36, 2.0, 1.0, 0.5, 0.25], [0x9aa0a6, -4.5, 1.7, 0.9, 0.2], [0xd9a441, -1.5, 1.72, 1.4, 0.25],
+  ];
+  for (const [c, x, y, w, h] of objets) add(new THREE.BoxGeometry(w, h, 0.4), c, x, y, -I.dz + 0.4);
+  // Trépieds, mires et cannes posés contre le mur, à droite des étagères
+  for (let k = 0; k < 3; k++) {
+    for (let j = -1; j <= 1; j++) {
+      const p = add(new THREE.CylinderGeometry(0.025, 0.02, 1.6, 5), 0xd9a441, 3.6 + k * 0.5 + j * 0.06, 0.8, -I.dz + 0.35);
+      p.rotation.z = 0.12 + j * 0.05;
+    }
+  }
+  const mireMat = new THREE.MeshLambertMaterial({ map: textureMire() });
+  for (const mx of [5.4, 5.7]) { const m = add(new THREE.BoxGeometry(0.08, 1.6, 0.04), mireMat, mx, 0.8, -I.dz + 0.3); m.rotation.z = -0.08; }
+  for (const mx of [6.2, 6.5]) add(new THREE.CylinderGeometry(0.016, 0.016, 2, 6), 0x9aa0a6, mx, 1, -I.dz + 0.3);
+  obstaclesBoites.push({ minX: I.x + 3.2, maxX: I.x + 6.8, minZ: I.z - I.dz, maxZ: I.z - I.dz + 0.6 });
+  const panneau = add(new THREE.PlaneGeometry(3, 0.5), new THREE.MeshLambertMaterial({ map: texteTexture([{ texte: 'MATÉRIEL DE TERRAIN', police: 'bold 64px Arial', couleur: '#ffffff', y: 64 }], 768, 128, '#e35d00') }), -1.8, 2.75, -I.dz + 0.02);
+  panneau.rotation.y = 0;
+  // Bureau avec l'ordinateur de traitement (mur Sud)
+  add(new THREE.BoxGeometry(2.6, 0.08, 1.0), 0xd7c4a3, -3, 0.76, I.dz - 0.7, true);
+  for (const lx of [-1.2, 1.2]) add(new THREE.BoxGeometry(0.06, 0.74, 0.9), 0x5a5f66, -3 + lx, 0.37, I.dz - 0.7);
+  const ecran = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.55), new THREE.MeshBasicMaterial({ map: texteTexture([
+    { texte: 'TOPO-PC', police: 'bold 60px Arial', couleur: '#8fd19e', y: 60 },
+    { texte: 'Transfert des données', police: '40px Arial', couleur: '#d6f5dc', y: 130 },
+    { texte: 'carnet · GNSS · station', police: '34px Arial', couleur: '#9fbfa6', y: 190 },
+  ], 512, 256, '#1f2b22') }));
+  ecran.position.set(-3, 1.17, I.dz - 0.85);
+  ecran.rotation.y = Math.PI;
+  g.add(ecran);
+  add(new THREE.BoxGeometry(1.02, 0.62, 0.04), 0x222222, -3, 1.17, I.dz - 0.82);
+  add(new THREE.BoxGeometry(0.08, 0.3, 0.08), 0x222222, -3, 0.95, I.dz - 0.8);
+  add(new THREE.BoxGeometry(0.5, 0.03, 0.18), 0x333333, -3, 0.81, I.dz - 1.0);
+  add(new THREE.BoxGeometry(0.22, 0.48, 0.48), 0x2b2f33, -1.9, 1.05, I.dz - 0.65);
+  // Chaise
+  add(new THREE.BoxGeometry(0.5, 0.06, 0.5), 0x24527a, -3, 0.48, I.dz - 1.6);
+  add(new THREE.BoxGeometry(0.5, 0.55, 0.06), 0x24527a, -3, 0.78, I.dz - 1.37);
+  add(new THREE.CylinderGeometry(0.03, 0.03, 0.45, 6), 0x333333, -3, 0.23, I.dz - 1.6);
+  // Table à plans avec un extrait de plan cadastral
+  add(new THREE.BoxGeometry(2.4, 0.08, 1.4), 0xe6e1d6, 2.2, 0.9, 1.2, true);
+  for (const [lx, lz] of [[-1.1, -0.6], [1.1, -0.6], [-1.1, 0.6], [1.1, 0.6]]) add(new THREE.BoxGeometry(0.06, 0.88, 0.06), 0x5a5f66, 2.2 + lx, 0.44, 1.2 + lz);
+  const plan = document.createElement('canvas'); plan.width = 512; plan.height = 300;
+  { const p = plan.getContext('2d'); p.fillStyle = '#fbf8ef'; p.fillRect(0, 0, 512, 300); p.strokeStyle = '#555'; p.lineWidth = 2;
+    const h = aleatoire(31);
+    for (let k = 0; k < 14; k++) { p.beginPath(); p.moveTo(h() * 512, h() * 300); p.lineTo(h() * 512, h() * 300); p.lineTo(h() * 512, h() * 300); p.stroke(); }
+    p.fillStyle = '#c41e1e'; for (let k = 0; k < 10; k++) { p.beginPath(); p.arc(h() * 512, h() * 300, 4, 0, Math.PI * 2); p.fill(); }
+    p.fillStyle = '#1d2733'; p.font = 'bold 22px Arial'; p.fillText('PLAN DE BORNAGE — Les Hauts du Moulin', 20, 30); }
+  const tPlan = new THREE.CanvasTexture(plan); tPlan.colorSpace = THREE.SRGBColorSpace;
+  const feuille = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 1.25).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ map: tPlan }));
+  feuille.position.set(2.2, 0.95, 1.2);
+  g.add(feuille);
+  // Affiche sur le mur Ouest
+  const affiche = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1.3), new THREE.MeshLambertMaterial({ map: texteTexture([
+    { texte: 'Cabinet de géomètres-experts', police: 'bold 56px Arial', couleur: '#1d2733', y: 70 },
+    { texte: '« Géomètre topographe »', police: 'italic 52px Georgia, serif', couleur: '#e35d00', y: 150 },
+    { texte: 'Bornage · Topographie · Implantation · Lycée PMF', police: '34px Arial', couleur: '#24527a', y: 225 },
+  ], 1024, 300, '#ffffff') }));
+  affiche.position.set(-I.dx + 0.02, 1.9, 0);
+  affiche.rotation.y = Math.PI / 2;
+  g.add(affiche);
+  // Porte de sortie (mur Est) et panneau « SORTIE »
+  const porteInt = add(new THREE.PlaneGeometry(1.5, 2.3), 0x7fa8c4, I.dx - 0.02, 1.15, 0);
+  porteInt.rotation.y = -Math.PI / 2;
+  const sortie = add(new THREE.PlaneGeometry(1, 0.35), new THREE.MeshBasicMaterial({ map: texteTexture([{ texte: 'SORTIE →', police: 'bold 80px Arial', couleur: '#ffffff', y: 66 }], 384, 128, '#1e8e3e') }), I.dx - 0.03, 2.6, 0);
+  sortie.rotation.y = -Math.PI / 2;
+  // Plinthes
+  for (const [w, d, x, z] of [[I.dx * 2, 0.04, 0, -I.dz + 0.02], [I.dx * 2, 0.04, 0, I.dz - 0.02], [0.04, I.dz * 2, -I.dx + 0.02, 0], [0.04, I.dz * 2, I.dx - 0.02, 0]]) {
+    const p = new THREE.Mesh(new THREE.BoxGeometry(w, 0.12, d), plinthe); p.position.set(x, 0.06, z); g.add(p);
+  }
+  scene.add(g);
+  // Lieux d'interaction (coordonnées monde)
+  I.etageres = { x: I.x - 1.8, z: I.z - I.dz + 1.5 };
+  I.ordinateur = { x: I.x - 3, z: I.z + I.dz - 1.9 };
+  I.sortie = { x: I.x + I.dx - 0.9, z: I.z };
 }
 
 // =====================================================================
@@ -1364,6 +1614,8 @@ MONDE.batiments.forEach(creerBatiment);
 creerEglise();
 creerChateauEau();
 creerCamion();
+creerCabinet();
+creerInterieurCabinet();
 creerRepere();
 const geometre = creerGeometre();
 
@@ -1446,6 +1698,32 @@ const ICONES = {
   jalons: svgIcone([14, 24, 34].map(x => `
     ${[0, 1, 2, 3, 4].map(k => `<rect x="${x - 2}" y="${4 + k * 8}" width="4" height="8" fill="${k % 2 ? '#f5f5f5' : '#d42020'}" stroke="#999" stroke-width="0.3"/>`).join('')}
     <path d="M${x - 2} 44 L${x} 47.5 L${x + 2} 44 Z" fill="#555"/>`).join('')),
+  // Batterie Li-ion d'appareil topographique, avec ses voyants de charge
+  batterie: svgIcone(`
+    <rect x="9" y="14" width="30" height="24" rx="3" fill="#2b2f33" stroke="#111"/>
+    <rect x="16" y="10" width="6" height="4" rx="1" fill="#888"/><rect x="26" y="10" width="6" height="4" rx="1" fill="#888"/>
+    <rect x="13" y="19" width="22" height="7" rx="1" fill="#1d2124" stroke="#555" stroke-width="0.6"/>
+    <rect x="15" y="21" width="4" height="3" fill="#4cd964"/><rect x="20" y="21" width="4" height="3" fill="#4cd964"/><rect x="25" y="21" width="4" height="3" fill="#4cd964"/><rect x="30" y="21" width="3" height="3" fill="#3a3f44"/>
+    <path d="M22 29 L19 34 L23 34 L21 38 L27 31 L23 31 L25 29 Z" fill="#f2c200"/>`),
+  // Détecteur de réseaux (canne jaune avec écran) et générateur de signal
+  detecteur: svgIcone(`
+    <rect x="27" y="30" width="16" height="12" rx="2" fill="#2b2f33" stroke="#111"/><circle cx="31" cy="36" r="2" fill="#4cd964"/><rect x="34" y="33" width="7" height="2" fill="#888"/>
+    <path d="M14 6 L14 40" stroke="#f2c200" stroke-width="5" stroke-linecap="round"/>
+    <rect x="7" y="6" width="14" height="10" rx="2" fill="#f2c200" stroke="#9c7c00"/><rect x="9" y="8" width="10" height="5" fill="#1d2a20"/>
+    <path d="M10 10.5 L12 9 L14 11 L16 9 L18 10" stroke="#4cd964" stroke-width="1" fill="none"/>
+    <rect x="9" y="38" width="10" height="7" rx="2" fill="#333"/>`),
+  // Bombe de peinture de marquage (orange fluo)
+  bombe: svgIcone(`
+    <rect x="16" y="14" width="16" height="30" rx="3" fill="#ff6a00" stroke="#a84300"/>
+    <rect x="18" y="9" width="12" height="6" rx="2" fill="#ddd" stroke="#999"/><rect x="21" y="5" width="6" height="5" rx="1" fill="#333"/>
+    <rect x="18" y="22" width="12" height="10" fill="#fff" opacity=".85"/><path d="M20 27 L28 27" stroke="#ff6a00" stroke-width="2"/>
+    <circle cx="36" cy="7" r="1.3" fill="#ff6a00"/><circle cx="39" cy="10" r="1" fill="#ff6a00"/><circle cx="38" cy="4" r="0.9" fill="#ff6a00"/>`),
+  // Drone quadrirotor avec sa nacelle photo
+  drone: svgIcone(`
+    <path d="M10 14 L38 34 M38 14 L10 34" stroke="#555" stroke-width="3"/>
+    <rect x="17" y="18" width="14" height="12" rx="3" fill="#e8e8e8" stroke="#777"/>
+    ${[[10, 14], [38, 14], [10, 34], [38, 34]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="8" ry="2.5" fill="#9fd3e8" opacity=".8"/><circle cx="${x}" cy="${y}" r="2" fill="#333"/>`).join('')}
+    <rect x="21" y="30" width="6" height="5" rx="1" fill="#333"/><circle cx="24" cy="36" r="2.2" fill="#5b8fa8" stroke="#222"/>`),
   // Piquets en bois et massette
   piquets: svgIcone(`
     <path d="M9 8 L15 8 L15 36 L12 42 L9 36 Z" fill="#c08a4b" stroke="#7a5428"/>
@@ -1467,6 +1745,10 @@ const MATERIEL = [
   { id: 'carnet',    icone: ICONES.carnet, nom: 'Carnet de terrain', poids: 0.2, usage: 'Indispensable pour noter les mesures et les croquis.' },
   { id: 'jalons',    icone: ICONES.jalons, nom: 'Jalons (×3)', poids: 2.0, usage: 'Matérialiser des alignements et signaler des points de loin.' },
   { id: 'piquets',   icone: ICONES.piquets, nom: 'Piquets + massette', poids: 3.0, usage: 'Matérialiser des points au sol (implantation).' },
+  { id: 'batterie',  icone: ICONES.batterie, nom: 'Batterie', poids: 0.5, usage: 'Indispensable pour les appareils électroniques : station totale, récepteur GNSS, drone.' },
+  { id: 'detecteur', icone: ICONES.detecteur, nom: 'Détecteur de réseaux + générateur', poids: 3.0, usage: 'Localise les câbles et canalisations enterrés ; le générateur, branché sur le réseau, y injecte un signal.' },
+  { id: 'bombe',     icone: ICONES.bombe, nom: 'Bombe de marquage', poids: 0.4, usage: 'Peinture orange pour marquer au sol le tracé d\'un réseau détecté.' },
+  { id: 'drone',     icone: ICONES.drone, nom: 'Drone + radiocommande', poids: 1.8, usage: 'Prises de vues aériennes pour la photogrammétrie (orthophoto, modèle 3D).' },
 ];
 const OBJET = Object.fromEntries(MATERIEL.map(o => [o.id, o]));
 
@@ -1601,6 +1883,10 @@ function creerMaterielPorte() {
   const carnet = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.15, 0.02), mat(0x2e7d32));
   carnet.position.set(0.12, 1.33, 0.165);
   g.add(carnet); objets.carnet = carnet;
+  // Batterie de rechange dans une pochette à la ceinture, dans le dos
+  const batterie = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.09, 0.05), mat(0x2b2f33));
+  batterie.position.set(-0.12, 0.93, -0.16);
+  g.add(batterie); objets.batterie = batterie;
 
   for (const o of Object.values(objets)) o.visible = false;
   return objets;
@@ -1612,9 +1898,9 @@ const materielPorte = creerMaterielPorte();
 // =====================================================================
 const MISSIONS = [
   {
-    id: 1, titre: 'Nivellement de 5 piquets', couleur: '#d62828',
-    consigne: 'Déterminer l\'altitude du dessus des 5 piquets rouges plantés de part et d\'autre du chemin, à partir du repère de nivellement IGN (152,347 m) situé près du camion.',
-    methode: 'Cheminement fermé R → P1 → P2 → P3 → P4 → P5 → R (6 stations). À chaque station, installe le niveau <b>entre</b> deux points (touche <kbd>T</kbd>) : lecture arrière sur le point précédent, puis lecture avant sur le suivant. Portées de 50 m au plus, si possible égales.',
+    id: 1, titre: 'Nivellement de 3 piquets', couleur: '#d62828',
+    consigne: 'Déterminer l\'altitude du dessus des 3 piquets rouges plantés de part et d\'autre du chemin, à partir du repère de nivellement IGN (152,347 m) situé près du parking du cabinet.',
+    methode: 'Cheminement fermé R → P1 → P2 → P3 → R (4 stations). À chaque station, installe le niveau <b>entre</b> deux points (touche <kbd>T</kbd>) : lecture arrière sur le point précédent, puis lecture avant sur le suivant. Portées de 50 m au plus, si possible égales.',
     tolerance: n => `lecture ± ${mm(n.lecture)} · fermeture du cheminement ± ${mm(n.fermeture)}`, requis: ['niveau', 'trepied', 'mire'],
   },
   {
@@ -1644,20 +1930,44 @@ const MISSIONS = [
   {
     id: 7, titre: 'Distance entre deux bornes de part et d\'autre de la mare à Pépère', couleur: '#00838f',
     consigne: 'Mesurer la distance horizontale entre la borne A (rive ouest) et la borne B (rive est) de la mare à Pépère.',
-    methode: 'Le décamètre ne traverse pas l\'eau ! Station totale sur A et prisme sur B (ou télémètre laser depuis A).',
-    tolerance: n => `± ${cm(n.distance)}`, requis: ['station', 'trepied', 'prisme'], ouBien: ['telemetre'],
+    methode: 'Le décamètre ne traverse pas l\'eau et le télémètre n\'est pas assez fiable pour une distance entre bornes : station totale sur A et prisme sur B.',
+    tolerance: n => `± ${cm(n.distance)}`, requis: ['station', 'trepied', 'prisme'],
   },
   {
     id: 8, titre: 'Largeur de la rivière', couleur: '#3949ab',
-    consigne: 'Mesurer la largeur de la rivière entre le piquet C (rive ouest) et le piquet D (rive est).',
-    methode: 'Station totale sur C et prisme sur D (ou télémètre laser depuis C).',
-    tolerance: n => `± ${cm(n.distance)}`, requis: ['station', 'trepied', 'prisme'], ouBien: ['telemetre'],
+    consigne: 'Mesurer la largeur de la rivière : distance du jalon D (rive est, inaccessible) à l\'alignement des stations C1 et C2 (rive ouest).',
+    methode: 'Méthode du point inaccessible, en 2 stations. Sur C1 : distance C1–C2 sur prisme, puis angles horizontaux vers C2 et vers le jalon D. Sur C2 : angles vers C1 et vers D. Un croquis du triangle se complète : on en déduit la largeur (loi des sinus).',
+    tolerance: n => `± ${cm(n.hauteur)}`, requis: ['station', 'trepied', 'prisme'],
   },
   {
     id: 9, titre: 'Profondeur de la carrière', couleur: '#8d6e63',
     consigne: 'Mesurer la profondeur de la carrière : la dénivelée entre la borne K1 (sur le bord) et le piquet K2 (au fond).',
     methode: 'Station totale sur le point S20 au bord de la carrière, prisme sur K1 puis sur K2. Profondeur = Dh₁ × cotan V₁ − Dh₂ × cotan V₂ (la hauteur du prisme s\'élimine). La mire de 4 m est trop courte pour 12 m de dénivelée !',
     tolerance: n => `± ${cm(n.hauteur)}`, requis: ['station', 'trepied', 'prisme'],
+  },
+  {
+    id: 11, titre: 'Le Pont à Mousson : longueur et hauteur', couleur: '#00695c',
+    consigne: 'Mesurer la longueur du tablier du Pont à Mousson et la hauteur du dessus du tablier au-dessus de l\'eau, au droit de la pile.',
+    methode: 'Station totale sur S30 (rive ouest). Longueur : prisme à chaque extrémité du tablier (Dh et Hz), puis L² = Dh₁² + Dh₂² − 2·Dh₁·Dh₂·cos ΔHz. Hauteur : laser sans réflecteur sur la pile au ras de l\'eau (Dh, V₁), puis visée du dessus du tablier (V₂).',
+    tolerance: n => `longueur ± ${cm(n.distance)} · hauteur ± ${cm(n.hauteur)}`, requis: ['station', 'trepied', 'prisme'],
+  },
+  {
+    id: 12, titre: 'Détection d\'un réseau électrique enterré', couleur: '#f57f17',
+    consigne: 'Retrouver et marquer au sol le tracé du câble électrique enterré qui part du coffret (près de la maison « Llere ») et arrive au poste électrique.',
+    methode: 'Branche le générateur sur le coffret (E), puis suis le signal du détecteur : il est maximal à l\'aplomb du câble. Marque le tracé à la bombe (touche R) au moins tous les 5 m. Le réseau apparaît au fur et à mesure. Termine au poste électrique (E).',
+    tolerance: n => `± ${cm(n.distance * 10)} entre les marques et le câble`, requis: ['detecteur', 'bombe'],
+  },
+  {
+    id: 13, titre: 'Photogrammétrie de la carrière par drone', couleur: '#5e35b1',
+    consigne: 'Préparer et réaliser le vol photogrammétrique de la carrière (zone de 50 m × 40 m) pour produire une orthophoto et un modèle 3D.',
+    methode: 'À la zone de décollage (E) : choisis la hauteur de vol et les recouvrements longitudinal et latéral des photos. Respecte la taille de pixel au sol (GSD), l\'autonomie de la batterie et la hauteur maximale de 120 m, puis lance le vol.',
+    tolerance: n => `recouvrements ≥ ${CRITERES_DRONE[nomNiveau(n)].long} % / ${CRITERES_DRONE[nomNiveau(n)].lat} %, GSD ≤ ${fr(CRITERES_DRONE[nomNiveau(n)].gsd, 1)} cm`, requis: ['drone'],
+  },
+  {
+    id: 10, titre: 'Contour de la grange à Flo', couleur: '#ad1457',
+    consigne: 'Relever les dimensions de la grange à Flo : longueur des 4 façades, puis largeur et hauteur du portail. Le croquis se complète au fur et à mesure.',
+    methode: 'Mesure directe au décamètre (ruban tendu d\'un angle à l\'autre) ou au télémètre laser. Un point de mesure par façade, deux pour le portail.',
+    tolerance: n => `± ${cm(n.distance)}`, requisUnDe: ['decametre', 'telemetre'],
   },
   {
     id: 4, titre: 'Bonus : largeur du chemin et façade de la maison Nosiuol', couleur: '#e0a800',
@@ -1669,6 +1979,9 @@ const MISSIONS = [
 // Numéro affiché (la mission bonus reste en dernier)
 MISSIONS.forEach((m, i) => { m.libelle = m.id === 4 ? 'bonus' : String(i + 1); });
 const MISSION = Object.fromEntries(MISSIONS.map(m => [m.id, m]));
+// Missions choisies pour la journée (écran d'accueil) : toutes par défaut
+let missionsChoisies = new Set(MISSIONS.map(m => m.id));
+const missionActive = id => missionsChoisies.has(id);
 // Noms du matériel en minuscule initiale (« récepteur GNSS + canne ») pour les phrases
 const nomsMateriel = ids => ids.map(id => OBJET[id].nom[0].toLowerCase() + OBJET[id].nom.slice(1)).join(', ');
 
@@ -1678,7 +1991,8 @@ const POINTS_MISSION = [];
 // Mission 1 : piquets en aller-retour le long du chemin principal (aller sur un bord, retour sur l'autre),
 // pour un cheminement fermé R → P1 … P5 → R aux portées réalistes (environ 15 m)
 MONDE.piquets = [];
-[[14, 1], [27, 1], [40, 1], [33, -1], [20, -1]].forEach(([k, cote], i) => {
+// Cheminement raccourci à la demande du professeur : 3 piquets, soit 4 stations
+[[14, 1], [30, 1], [22, -1]].forEach(([k, cote], i) => {
   const pts = POINTS_CHEMINS[0], p = pts[k], suivant = pts[k + 1];
   const tx = suivant.x - p.x, tz = suivant.z - p.z, n = Math.hypot(tx, tz);
   const x = p.x - tz / n * 1.7 * cote, z = p.z + tx / n * 1.7 * cote;
@@ -1703,11 +2017,23 @@ POINTS_MISSION.push({
 // Mission 4 (bonus) : largeur du chemin et façade Est de la maison
 {
   const k = 95, p = POINTS_CHEMINS[0][k];
-  MONDE.largeurChemin = { x: p.x, z: p.z, largeur: 2 * (MONDE.chemin.largeur / 2 + 0.15 * Math.sin(k * 0.7)) };
+  MONDE.largeurChemin = { x: p.x, z: p.z, largeur: 2 * (MONDE.chemin.largeur / 2 + 0.15 * Math.sin(k * 0.7)), croquis: 'chemin' };
   POINTS_MISSION.push({ mission: 4, nom: 'Largeur du chemin', x: p.x, z: p.z, rayon: 3, hauteurBalise: 0, objet: MONDE.largeurChemin });
   const m = MONDE.batiments[0];
-  MONDE.facadeMaison = { x: m.x + m.dx + 2.5, z: m.z, longueur: 2 * m.dz };
+  MONDE.facadeMaison = { x: m.x + m.dx + 2.5, z: m.z, longueur: 2 * m.dz, croquis: 'facade' };
   POINTS_MISSION.push({ mission: 4, nom: 'Façade Est de la maison Nosiuol', x: MONDE.facadeMaison.x, z: MONDE.facadeMaison.z, rayon: 3, hauteurBalise: 0, objet: MONDE.facadeMaison });
+}
+// Mission 10 : contour de la grange à Flo (4 façades) et portail (largeur, hauteur)
+{
+  const G = MONDE.batiments[2];   // grange : demi-dimensions dx = 6,5 m (Est-Ouest), dz = 4 m (Nord-Sud), portail 3,40 × 3,60 m
+  MONDE.grange = { contour: { 'Façade Nord': 2 * G.dx, 'Façade Sud': 2 * G.dx, 'Façade Est': 2 * G.dz, 'Façade Ouest': 2 * G.dz }, portail: { largeur: 3.4, hauteur: 3.6 } };
+  const points = [
+    ['Façade Nord', G.x, G.z - G.dz - 2, 2 * G.dx], ['Façade Sud', G.x, G.z + G.dz + 2, 2 * G.dx],
+    ['Façade Est', G.x + G.dx + 2, G.z + 3, 2 * G.dz], ['Façade Ouest', G.x - G.dx - 2, G.z, 2 * G.dz],
+    ['Portail : largeur', G.x + G.dx + 2.2, G.z - 1.2, 3.4], ['Portail : hauteur', G.x + G.dx + 3.6, G.z + 0.2, 3.6],
+  ];
+  for (const [nom, x, z, longueur] of points)
+    POINTS_MISSION.push({ mission: 10, nom, x, z, rayon: 1.6, hauteurBalise: 0, objet: { longueur, croquis: 'grange' } });
 }
 // Mission 5 : cheminement encadré le long du chemin du pont, entre deux repères R2 et R3
 {
@@ -1743,16 +2069,76 @@ POINTS_MISSION.push({
 // Missions 6 à 9 : points de station et points visés (altitudes calculées depuis la scène)
 {
   const S = MONDE.pointsSpeciaux;
-  for (const p of Object.values(S)) p.altitude = hauteurSol(p.x, p.z) + (['S10', 'S20'].includes(p.nom) ? 0.05 : 0.1);
+  for (const p of Object.values(S)) p.altitude = hauteurSol(p.x, p.z) + (['S10', 'S20', 'S30'].includes(p.nom) ? 0.05 : 0.1);
   POINTS_MISSION.push({ mission: 6, nom: 'Point de station S10', x: S.S10.x, z: S.S10.z, rayon: 1.2, hauteurBalise: 0.05, objet: S.S10 });
   POINTS_MISSION.push({ mission: 7, nom: 'Borne A (station)', x: S.A.x, z: S.A.z, rayon: 1.2, hauteurBalise: 0.1, objet: { de: S.A, vers: S.B, eau: MONDE.etang.niveau } });
-  POINTS_MISSION.push({ mission: 8, nom: 'Piquet C (station)', x: S.C.x, z: S.C.z, rayon: 1.2, hauteurBalise: 0.1, objet: { de: S.C, vers: S.D, eau: niveauEau(S.C.z) } });
+  POINTS_MISSION.push({ mission: 8, nom: 'Station C1 (rivière)', x: S.C1.x, z: S.C1.z, rayon: 1.2, hauteurBalise: 0.1, objet: { ici: S.C1, autre: S.C2, cible: S.D } });
+  POINTS_MISSION.push({ mission: 8, nom: 'Station C2 (rivière)', x: S.C2.x, z: S.C2.z, rayon: 1.2, hauteurBalise: 0.1, objet: { ici: S.C2, autre: S.C1, cible: S.D } });
   POINTS_MISSION.push({ mission: 9, nom: 'Point de station S20', x: S.S20.x, z: S.S20.z, rayon: 1.5, hauteurBalise: 0.05, objet: S.S20 });
+  POINTS_MISSION.push({ mission: 11, nom: 'Point de station S30 (Pont à Mousson)', x: S.S30.x, z: S.S30.z, rayon: 1.5, hauteurBalise: 0.05, objet: S.S30 });
+  // Mission 12 : réseau électrique enterré du coffret au poste (tracé vrai, échantillonné tous les 0,5 m)
+  {
+    const sommets = [[S.COFFRET.x, S.COFFRET.z + 1], [-39, 30], [-33, 40], [-25.5, 46.5], [S.POSTE.x - 1.6, S.POSTE.z - 1.5]];
+    const trace = [];
+    for (let i = 0; i < sommets.length - 1; i++) {
+      const [x1, z1] = sommets[i], [x2, z2] = sommets[i + 1], n = Math.ceil(Math.hypot(x2 - x1, z2 - z1) / 0.5);
+      for (let k = 0; k < n; k++) trace.push({ x: lerp(x1, x2, k / n), z: lerp(z1, z2, k / n), vu: false });
+    }
+    trace.push({ x: sommets[sommets.length - 1][0], z: sommets[sommets.length - 1][1], vu: false });
+    MONDE.reseau = { sommets, trace, profondeur: 0.8 };
+  }
+  POINTS_MISSION.push({ mission: 12, nom: 'Coffret électrique (brancher le générateur)', x: S.COFFRET.x + 1.2, z: S.COFFRET.z, rayon: 1.8, hauteurBalise: 1, objet: S.COFFRET, role: 'depart' });
+  POINTS_MISSION.push({ mission: 12, nom: 'Poste électrique (fin du tracé)', x: S.POSTE.x - 2.5, z: S.POSTE.z, rayon: 2.2, hauteurBalise: 2.4, objet: S.POSTE, role: 'arrivee' });
+  // Mission 13 : photogrammétrie par drone au-dessus de la carrière
+  POINTS_MISSION.push({ mission: 13, nom: 'Zone de décollage du drone', x: S.DECOLLAGE.x, z: S.DECOLLAGE.z, rayon: 2, hauteurBalise: 0.05, objet: S.DECOLLAGE });
   MONDE.distanceAB = Math.hypot(S.B.x - S.A.x, S.B.z - S.A.z);
-  MONDE.largeurRiviere = Math.hypot(S.D.x - S.C.x, S.D.z - S.C.z);
+  // Largeur = distance de D à l'alignement C1–C2 (rive ouest), calculée depuis la géométrie
+  {
+    const ux = S.C2.x - S.C1.x, uz = S.C2.z - S.C1.z, L = Math.hypot(ux, uz);
+    MONDE.largeurRiviere = Math.abs((S.D.x - S.C1.x) * uz - (S.D.z - S.C1.z) * ux) / L;
+    MONDE.baseRiviere = L;
+  }
   MONDE.carriere.profondeurMesurable = S.K1.altitude - S.K2.altitude;
 }
 for (const p of POINTS_MISSION) { p.fait = false; p.essaisMaterielInadapte = 0; }
+
+// --- Réseau électrique enterré (mission 12) ---
+function creerReseau() {
+  const S = MONDE.pointsSpeciaux, R = MONDE.reseau;
+  // Coffret électrique (gris, pictogramme éclair)
+  const solC = hauteurSol(S.COFFRET.x, S.COFFRET.z);
+  const coffret = new THREE.Mesh(new THREE.BoxGeometry(0.35, 1.1, 0.7), mat(0x9aa0a6));
+  coffret.position.set(S.COFFRET.x, solC + 0.55, S.COFFRET.z);
+  const eclair = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.4), new THREE.MeshBasicMaterial({ map: texteTexture([{ texte: '⚡', police: 'bold 90px Arial', couleur: '#111', y: 64 }], 128, 128, '#f2c200') }));
+  eclair.position.set(S.COFFRET.x + 0.18, solC + 0.75, S.COFFRET.z); eclair.rotation.y = Math.PI / 2;
+  scene.add(coffret, eclair);
+  obstaclesBoites.push({ minX: S.COFFRET.x - 0.2, maxX: S.COFFRET.x + 0.2, minZ: S.COFFRET.z - 0.35, maxZ: S.COFFRET.z + 0.35 });
+  // Poste électrique (petite cabine en béton)
+  const solP = hauteurSol(S.POSTE.x, S.POSTE.z);
+  const poste = new THREE.Mesh(new THREE.BoxGeometry(3, 2.6, 2.4), mat(0xd9d2bf));
+  poste.position.set(S.POSTE.x, solP + 1.2, S.POSTE.z);
+  const toitPoste = new THREE.Mesh(new THREE.BoxGeometry(3.3, 0.2, 2.7), mat(0x5a5f66));
+  toitPoste.position.set(S.POSTE.x, solP + 2.6, S.POSTE.z);
+  const portePoste = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.9), mat(0x4d5a63));
+  portePoste.position.set(S.POSTE.x - 1.51, solP + 0.95, S.POSTE.z); portePoste.rotation.y = -Math.PI / 2;
+  const plaquePoste = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.4), new THREE.MeshLambertMaterial({ map: texteTexture([{ texte: '⚡ POSTE ÉLECTRIQUE', police: 'bold 40px Arial', couleur: '#111', y: 50 }], 512, 100, '#f2c200') }));
+  plaquePoste.position.set(S.POSTE.x - 1.52, solP + 2.15, S.POSTE.z); plaquePoste.rotation.y = -Math.PI / 2;
+  scene.add(poste, toitPoste, portePoste, plaquePoste);
+  obstaclesBoites.push({ minX: S.POSTE.x - 1.5, maxX: S.POSTE.x + 1.5, minZ: S.POSTE.z - 1.2, maxZ: S.POSTE.z + 1.2 });
+  // Câble : un petit segment rouge par échantillon, caché tant qu'il n'a pas été détecté
+  const geoSeg = new THREE.BoxGeometry(0.18, 0.04, 0.55), matSeg = new THREE.MeshBasicMaterial({ color: 0xd62828 });
+  for (let i = 0; i < R.trace.length; i++) {
+    const p = R.trace[i], q = R.trace[Math.min(i + 1, R.trace.length - 1)], r0 = R.trace[Math.max(i - 1, 0)];
+    const seg = new THREE.Mesh(geoSeg, matSeg);
+    seg.position.set(p.x, hauteurSol(p.x, p.z) + 0.04, p.z);
+    seg.rotation.y = Math.atan2(q.x - r0.x, q.z - r0.z);
+    seg.visible = false;
+    scene.add(seg);
+    p.mesh = seg;
+  }
+  R.groupeMarques = new THREE.Group();
+  scene.add(R.groupeMarques);
+}
 
 // --- Objets 3D : piquets, bornes et balises ---
 function creerObjetsMission() {
@@ -1800,7 +2186,7 @@ function creerObjetsMission() {
     capot.position.set(b.x, b.altitude - 0.015, b.z);
     scene.add(corps, capot);
   }
-  for (const p of [S.C, S.D, S.K2, S.S10, S.S20]) {
+  for (const p of [S.C1, S.C2, S.D, S.K2, S.S10, S.S20, S.S30]) {
     const corps = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.4, 0.06), bois);
     corps.position.set(p.x, p.altitude - 0.2, p.z);
     const clou = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.01, 8), mat(0x888888));
@@ -1809,6 +2195,8 @@ function creerObjetsMission() {
     rubalise.position.set(p.x, p.altitude - 0.06, p.z);
     scene.add(corps, clou, rubalise);
   }
+  // Réseau électrique : coffret, poste, câble (révélé au fur et à mesure) et marques de peinture
+  creerReseau();
   // Jalons rouge et blanc sur les points à viser, pour les repérer de loin
   const matJalon = new THREE.MeshLambertMaterial({ map: textureBandes(['#d42020', '#f5f5f5'], 8) });
   for (const p of [S.B, S.D, S.K1, S.K2]) {
@@ -1877,7 +2265,7 @@ function verifierMateriel(mission) {
       if (a('station') && !a('trepied')) explications.push('La station totale doit être installée sur un trépied pour être calée.');
       explications.push('Pour une hauteur inaccessible, il faut une station totale sur son trépied (mesure sans réflecteur).');
     }
-  } else if (mission.id === 4) {
+  } else if (mission.id === 4 || mission.id === 10) {
     if (!mission.requisUnDe.some(a)) {
       manque = ['decametre'];
       if (a('station')) explications.push('La station totale ferait l\'affaire, mais c\'est beaucoup de matériel pour une simple distance.');
@@ -1891,12 +2279,13 @@ function verifierMateriel(mission) {
       explications.push('Pour l\'altitude d\'un point inaccessible, il faut une station totale sur son trépied, installée sur un point d\'altitude connue.');
     }
   } else if (mission.id === 7 || mission.id === 8) {
-    if (!mission.ouBien.some(a)) {
+    if (!(mission.ouBien || []).some(a)) {
       manque = mission.requis.filter(id => !a(id));
       if (manque.length) {
         if (a('decametre')) explications.push('Le décamètre ne peut pas traverser l\'eau !');
+        if (a('telemetre') && !mission.ouBien) explications.push('Le télémètre à main n\'est pas assez fiable pour une distance entre deux bornes : il faut viser un prisme.');
         if (a('station') && !a('prisme')) explications.push('Pour une distance précise, la station totale vise un prisme tenu sur le point d\'en face.');
-        explications.push('Il faut une station totale sur trépied avec un prisme, ou un télémètre laser.');
+        explications.push(mission.ouBien ? 'Il faut une station totale sur trépied avec un prisme, ou un télémètre laser.' : 'Il faut une station totale sur trépied avec un prisme.');
       }
     }
   } else if (mission.id === 9) {
@@ -1906,15 +2295,32 @@ function verifierMateriel(mission) {
       if (a('station') && !a('prisme')) explications.push('Le fond est loin et en contrebas : la station doit viser un prisme tenu sur les points.');
       explications.push('Il faut une station totale sur trépied et un prisme.');
     }
+  } else if (mission.id === 12) {
+    manque = mission.requis.filter(id => !a(id));
+    if (manque.length) {
+      if (a('gnss')) explications.push('Le GNSS ne voit pas sous terre : pour un réseau enterré, il faut un détecteur de réseaux.');
+      explications.push('Il faut le détecteur de réseaux (avec son générateur) et une bombe de marquage pour reporter le tracé au sol.');
+    }
+  } else if (mission.id === 13) {
+    manque = mission.requis.filter(id => !a(id));
+    if (manque.length) explications.push('La photogrammétrie aérienne se fait au drone : ses photos qui se recouvrent permettent de reconstituer le terrain en 3D.');
+  } else {
+    // Cas général : tout le matériel listé dans « requis » est nécessaire
+    manque = (mission.requis || []).filter(id => !a(id));
   }
 
   if (manque.length) {
-    const texte = mission.id === 4 ? 'Il te manque un décamètre ou un télémètre.'
+    const texte = mission.requisUnDe ? 'Il te manque un décamètre ou un télémètre.'
       : mission.ouBien ? `Il te manque : ${nomsMateriel(manque)} (ou bien un télémètre laser).`
       : `Il te manque : ${nomsMateriel(manque)}.`;
-    return { ok: false, message: `${explications.join(' ')} ${texte} Retourne au camion.` };
+    return { ok: false, message: `${explications.join(' ')} ${texte} Retourne au cabinet.` };
   }
-  if (!a('carnet')) return { ok: false, carnet: true, message: 'Matériel adapté… mais tu n\'as pas de carnet : mesure perdue ! Retourne au camion chercher un carnet de terrain.' };
+  // Les appareils électroniques ne fonctionnent pas sans batterie
+  const electronique = (mission.requis || []).filter(id => ['station', 'gnss', 'drone'].includes(id));
+  const nomsAppareil = { gnss: 'le récepteur GNSS', station: 'la station totale', drone: 'le drone' };
+  if (electronique.length && !(mission.ouBien || []).some(a) && !a('batterie'))
+    return { ok: false, message: `Le matériel est le bon… mais ${nomsAppareil[electronique[0]]} ne s'allume pas : tu as oublié la batterie ! Retourne au cabinet.` };
+  if (!a('carnet')) return { ok: false, carnet: true, message: 'Matériel adapté… mais tu n\'as pas de carnet : mesure perdue ! Retourne au cabinet chercher un carnet de terrain.' };
   return { ok: true, message: 'Matériel adapté ✔' };
 }
 
@@ -1929,13 +2335,20 @@ const NIVEAUX = {
   expert:     { nom: 'Expert',     lecture: 0.001, fermeture: 0.004, gnssH: 0.015, gnssV: 0.02, hauteur: 0.03, distance: 0.01, derive: 0.9, calculEleve: true,  retourImmediat: false },
 };
 let niveau = NIVEAUX.decouverte;
+const nomNiveau = n => Object.keys(NIVEAUX).find(k => NIVEAUX[k] === n);
+// Photogrammétrie : recouvrements minimaux (%) et taille de pixel au sol maximale (cm) selon le niveau
+const CRITERES_DRONE = {
+  decouverte: { long: 60, lat: 40, gsd: 1.2 },
+  confirme:   { long: 70, lat: 50, gsd: 1.0 },
+  expert:     { long: 80, lat: 60, gsd: 0.8 },
+};
 const mm = v => `${fr(v * 1000, 0)} mm`;
 const cm = v => `${fr(v * 100, 0)} cm`;
 // Écart signé : en mm s'il est petit, en cm sinon
 const ecartTexte = v => Math.abs(v) < 0.0005 ? '0 mm' : `${v > 0 ? '+' : '−'}${Math.abs(v) < 0.1 ? mm(Math.abs(v)) : cm(Math.abs(v))}`;
 
 // Tout ce que l'élève a mesuré (sera affiché dans le carnet à l'étape E et noté à l'étape F)
-const RESULTATS = { gnss: {}, chateau: null, eglise: null, traversees: {}, carriere: null, distances: {} };
+const RESULTATS = { gnss: {}, chateau: null, eglise: null, traversees: {}, carriere: null, distances: {}, riviere: {}, grange: {}, pont: null };
 
 // Tirage gaussien (Box-Muller) pour simuler les erreurs instrumentales
 function gauss() { let u = 0; while (!u) u = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * Math.random()); }
@@ -1955,6 +2368,8 @@ const CX = cvs.width / 2, CY = cvs.height / 2, RAYON_VUE = 210;
 let instrumentOuvert = false;
 let etapeCourante = null;          // { boucle(dt), valider(), glisser(dx, dy), molette(d), resolve, reject }
 const instClavier = new Set();     // touches maintenues pendant un mini-jeu
+// Z Q S D (KeyW/KeyA/KeyS/KeyD = position physique sur un clavier AZERTY) équivalent aux flèches dans les mini-jeux
+const CODES_INSTRUMENT = { KeyW: 'ArrowUp', KeyS: 'ArrowDown', KeyA: 'ArrowLeft', KeyD: 'ArrowRight' };
 class Abandon extends Error {}
 
 function ouvrirInstrument(titre) {
@@ -2001,10 +2416,10 @@ function brancherValidation(e) {
 }
 
 // Écran de résultat : attend que l'élève clique sur « Continuer »
-function ecranResultat(titre, html) {
+function ecranResultat(titre, html, garderDessin = false) {
   consigne(titre);
-  dessinerFond('#2b3a2f');
-  elInstPanneau.innerHTML = `${html}<p><button class="bouton" id="btnValider">Continuer (Entrée)</button></p>`;
+  if (!garderDessin) dessinerFond('#2b3a2f');   // garderDessin : on laisse le croquis affiché dans la vue
+  elInstPanneau.innerHTML = `${html}<p><button class="bouton" id="btnValider">Continuer (R)</button></p>`;
   return etape({ debut: brancherValidation, valider() { this.resolve(); } });
 }
 function dessinerFond(couleur) {
@@ -2058,9 +2473,9 @@ function calage(titre, aide, tolerance = 0.25) {
   let vx = 0, vy = 0;
   consigne(titre);
   elInstPanneau.innerHTML = `${aide}
-    <p>Agis sur les vis calantes avec les <kbd>flèches</kbd> (<kbd>Maj</kbd> = réglage fin), puis valide avec <kbd>Entrée</kbd>.</p>
+    <p>Agis sur les vis calantes avec <kbd>Z</kbd> <kbd>Q</kbd> <kbd>S</kbd> <kbd>D</kbd> (<kbd>Maj</kbd> = réglage fin), puis valide avec <kbd>R</kbd>.</p>
     <p id="etatBulle"></p>
-    <button class="bouton" id="btnValider">Valider le calage (Entrée)</button>`;
+    <button class="bouton" id="btnValider">Valider le calage (R)</button>`;
   const elEtat = document.getElementById('etatBulle');
   return etape({
     debut: brancherValidation,
@@ -2169,14 +2584,14 @@ function lectureMire({ titre, D, valeur }) {
   const pxParM = echelleMire(D), pxParRad = RAYON_VUE / DEMI_CHAMP_NIVEAU;
   consigne(titre);
   elInstPanneau.innerHTML = `
-    <p>1. Tourne la lunette vers la mire : <kbd>←</kbd> <kbd>→</kbd> ou glisser la souris (<kbd>Maj</kbd> = fin).</p>
-    <p>2. Fais la mise au point : molette ou <kbd>↑</kbd> <kbd>↓</kbd>.</p>
+    <p>1. Tourne la lunette vers la mire : <kbd>Q</kbd> <kbd>D</kbd> ou glisser la souris (<kbd>Maj</kbd> = fin).</p>
+    <p>2. Fais la mise au point : molette ou <kbd>Z</kbd> <kbd>S</kbd>.</p>
     <p>3. Lis la mire au <b>fil niveleur</b> (trait horizontal central) : le <b>chiffre</b> a sa base posée sur le trait de son décimètre (« 09 » = 0,90 m) et occupe les 5 premiers cm ; le <b>E</b> occupe les 5 cm du haut (dents de 1 cm). Repère le dernier chiffre sous le fil, compte les centimètres depuis sa base (petits carrés, puis dents du E), puis estime les millimètres.</p>
     <p><small><b>Couleurs :</b> <span style="color:#111">noir de 0 à 1 m</span>, <span style="color:#c41e1e">rouge de 1 à 2 m</span>, <span style="color:#111">noir de 2 à 3 m</span>, <span style="color:#c41e1e">rouge de 3 à 4 m</span>. Exemple : « 13 » en rouge = 1,3 m.</small></p>
     ${niveau === NIVEAUX.decouverte ? `<p><small>Portée ≈ ${fr(D, 1)} m.</small></p>` : ''}
     <p><b>Lecture (m) :</b> <input type="text" id="champLecture" placeholder="ex. 1,437" autocomplete="off"></p>
     <p id="etatLecture"></p>
-    <button class="bouton" id="btnValider">Noter la lecture (Entrée)</button>`;
+    <button class="bouton" id="btnValider">Noter la lecture (Entrée ou R)</button>`;
   const elEtat = document.getElementById('etatLecture');
   return etape({
     debut: brancherValidation,
@@ -2242,7 +2657,7 @@ const descriptionStation = (c, k) => `station S${k + 1} du ${c.nom} : arrière s
 function cheminementActif() {
   let meilleur = null, dMin = Infinity;
   for (const c of CHEMINEMENTS) {
-    if (cheminementTermine(c)) continue;
+    if (cheminementTermine(c) || !missionActive(c.mission)) continue;
     const a = c.sequence[c.station], b = c.sequence[c.station + 1];
     const d = Math.hypot((a.x + b.x) / 2 - joueur.x, (a.z + b.z) / 2 - joueur.z);
     if (d < dMin) { dMin = d; meilleur = c; }
@@ -2388,36 +2803,58 @@ async function bilanNivellement(chem) {
 // =====================================================================
 // === MISSION 2 : GNSS RTK ===
 // =====================================================================
-// Constellation fixe (azimut, hauteur en degrés) pour la vue du ciel
-const SATELLITES = (() => { const h = aleatoire(9); return Array.from({ length: 16 }, () => ({ az: h() * 360, el: 8 + h() * 80, masque: h() })); })();
+// Constellations fixes (azimut, hauteur en degrés) : GPS, GLONASS, Galileo, BeiDou
+const CONSTELLATIONS = {
+  G: { nom: 'GPS', couleur: '#4cd964' }, R: { nom: 'GLONASS', couleur: '#ff5e57' },
+  E: { nom: 'Galileo', couleur: '#4aa3ff' }, C: { nom: 'BeiDou', couleur: '#ffb020' },
+};
+const SATELLITES = (() => {
+  const h = aleatoire(9), liste = [];
+  for (const [lettre, n] of [['G', 8], ['R', 5], ['E', 6], ['C', 5]])
+    for (let k = 0; k < n; k++) liste.push({ id: `${lettre}${String(2 + Math.floor(h() * 30)).padStart(2, '0')}`, c: lettre, az: h() * 360, el: 8 + h() * 80, masque: h(), bruit: h() });
+  return liste;
+})();
 
 function attenteGNSS(borne, decalageCanne) {
   const sousArbres = !!borne.sousArbres;
   // Sous les arbres : les satellites bas sont masqués, quelques-uns plus hauts aussi (feuillage)
-  const visibles = SATELLITES.filter(s => !(sousArbres && ((s.el < 50 && s.masque < 0.85) || s.masque < 0.3)));
+  const masque = s => sousArbres && ((s.el < 50 && s.masque < 0.85) || s.masque < 0.3);
+  // Rapport signal/bruit (dB-Hz) : meilleur pour les satellites hauts, très faible s'ils sont masqués
+  const snr = s => masque(s) ? 12 + s.bruit * 10 : 32 + s.el * 0.18 + s.bruit * 8;
   let t = 0, solution = '', biais = { e: 0, n: 0, h: 0 }, mesure = null, chronoAffichage = 0, conseil = false;
   const SOL = {
-    Autonome: { sh: 2.5, sv: 4, couleur: '#c0392b' },
-    Flottant: { sh: sousArbres ? 0.25 : 0.4, sv: sousArbres ? 0.35 : 0.6, couleur: '#e67e22' },
-    Fixe:     { sh: 0.010, sv: 0.015, couleur: '#2e7d32' },
+    Autonome: { sh: 2.5, sv: 4, couleur: '#c0392b', pdop: 3.8 },
+    Flottant: { sh: sousArbres ? 0.25 : 0.4, sv: sousArbres ? 0.35 : 0.6, couleur: '#e67e22', pdop: sousArbres ? 5.6 : 1.9 },
+    Fixe:     { sh: 0.010, sv: 0.015, couleur: '#2e7d32', pdop: 1.6 },
   };
-  consigne(`Borne ${borne.nom} : attends la solution « Fixe », puis enregistre le point`);
+  // Déroulé : recherche des satellites, autonome, réception des corrections, flottant, fixe (≈ 5 s)
+  const T_RECHERCHE = 1.2, T_CORRECTIONS = 2.4, T_FIXE = 5;
+  consigne(`Borne ${borne.nom} : attends la solution « Fixe », puis relève le point (R)`);
   elInstPanneau.innerHTML = `
-    <div class="ecranInst" id="ecranGnss"></div>
+    <div class="ecranGnss">
+      <div class="enteteGnss"><span>Carnet électronique · Levé RTK</span><span id="gnssHeure"></span></div>
+      <div id="gnssEtat"></div>
+      <div class="barreRtk"><div id="gnssProgression"></div></div>
+      <div id="gnssDetails" class="detailsGnss"></div>
+      <div class="snrTitre">Rapport signal/bruit (dB-Hz)</div>
+      <div id="gnssSnr" class="snr"></div>
+    </div>
     <p id="conseilGnss"></p>
-    <button class="bouton" id="btnValider">Enregistrer le point (Entrée)</button>`;
-  const elEcran = document.getElementById('ecranGnss'), elConseil = document.getElementById('conseilGnss');
+    <button class="bouton" id="btnValider">Relever le point (R)</button>`;
+  const el = id => document.getElementById(id);
   return etape({
     debut: brancherValidation,
     boucle(dt) {
       t += dt;
-      const nouvelle = t < 0.6 ? 'Autonome' : (t < 1.8 || sousArbres) ? 'Flottant' : 'Fixe';
+      const nouvelle = t < T_CORRECTIONS ? 'Autonome' : (t < T_FIXE || sousArbres) ? 'Flottant' : 'Fixe';
       if (nouvelle !== solution) {
         solution = nouvelle;
         const s = SOL[solution];
         biais = { e: gauss() * s.sh, n: gauss() * s.sh, h: gauss() * s.sv };
       }
-      // Affichage rafraîchi deux fois par seconde (avec un léger bruit)
+      // Satellites suivis : ils apparaissent progressivement pendant la recherche
+      const suivis = SATELLITES.filter((s, i) => i / SATELLITES.length < Math.min(1, t / T_RECHERCHE));
+      const utilises = suivis.filter(s => !masque(s));
       chronoAffichage += dt;
       if (chronoAffichage > 0.3) {
         chronoAffichage = 0;
@@ -2427,30 +2864,48 @@ function attenteGNSS(borne, decalageCanne) {
           N: borne.N + decalageCanne.n + biais.n + gauss() * s.sh * 0.15,
           H: borne.altitude + biais.h + gauss() * s.sv * 0.15,
         };
-        elEcran.innerHTML = `Solution : <span class="badge" style="background:${s.couleur}">${solution}</span><br>
-          Satellites : ${visibles.length} / ${SATELLITES.length}<br>
-          Précision : σH ${fr(s.sh * 100, 1)} cm · σV ${fr(s.sv * 100, 1)} cm<br>
-          E = ${fr(mesure.E, 3)} m<br>N = ${fr(mesure.N, 3)} m<br>H = ${fr(mesure.H, 3)} m`;
+        const texteEtape = t < T_RECHERCHE ? 'Recherche des satellites…'
+          : t < T_CORRECTIONS ? 'Connexion au réseau RTK (NTRIP)…'
+          : solution === 'Flottant' ? (sousArbres && t > T_FIXE ? 'Ambiguïtés non résolues (signal masqué)' : 'Résolution des ambiguïtés…')
+          : 'Solution fixée : prêt à relever';
+        const avance = solution === 'Fixe' ? 1 : solution === 'Flottant' ? Math.min(sousArbres ? 0.55 : 0.95, (t - T_CORRECTIONS) / (T_FIXE - T_CORRECTIONS)) : t / T_CORRECTIONS * 0.3;
+        el('gnssHeure').textContent = `${utilises.length} sat. · ${fr(13 + t / 60, 2).replace(',', ':')}`;
+        el('gnssEtat').innerHTML = `<span class="badge" style="background:${s.couleur}">${solution === 'Fixe' ? 'RTK FIXE' : solution === 'Flottant' ? 'RTK FLOTTANT' : 'AUTONOME'}</span> ${texteEtape}`;
+        el('gnssProgression').style.width = `${Math.round(avance * 100)}%`;
+        el('gnssProgression').style.background = s.couleur;
+        const parConst = Object.keys(CONSTELLATIONS).map(c => `${CONSTELLATIONS[c].nom} ${utilises.filter(x => x.c === c).length}`).join(' · ');
+        el('gnssDetails').innerHTML = `
+          <div>Satellites utilisés : <b>${utilises.length}</b> / ${suivis.length} suivis</div><div class="petit">${parConst}</div>
+          <div>PDOP ${fr(s.pdop + gauss() * 0.05, 1)} · HRMS ${fr(s.sh * 100, 1)} cm · VRMS ${fr(s.sv * 100, 1)} cm</div>
+          <div>Corrections : ${t < T_CORRECTIONS ? '—' : `âge ${1 + Math.floor((t * 3) % 2)} s · base virtuelle (VRS)`}</div>
+          <div class="coordGnss">E = ${fr(mesure.E, 3)} m<br>N = ${fr(mesure.N, 3)} m<br>H = ${fr(mesure.H, 3)} m <span class="petit">(NGF-IGN69)</span></div>`;
+        el('gnssSnr').innerHTML = suivis.map(x => `<div class="barreSnr" title="${x.id}"><div style="height:${Math.round(snr(x) / 55 * 100)}%;background:${masque(x) ? '#666' : CONSTELLATIONS[x.c].couleur}"></div><span>${x.id}</span></div>`).join('');
       }
-      if (sousArbres && t > 4 && !conseil) {
+      if (sousArbres && t > T_FIXE + 1.5 && !conseil) {
         conseil = true;
-        elConseil.innerHTML = '<span class="ko">Sous les arbres, une grande partie du ciel est masquée (et les signaux rebondissent sur le feuillage) : la solution reste « Flottant ».</span> Tu peux enregistrer quand même (précision décimétrique) : ce sera signalé dans le bilan.';
+        el('conseilGnss').innerHTML = '<span class="ko">Sous les arbres, une grande partie du ciel est masquée (et les signaux rebondissent sur le feuillage) : la solution reste « Flottant ».</span> Tu peux relever quand même (précision décimétrique) : ce sera signalé dans le bilan.';
       }
-      // Vue du ciel (skyplot) : Nord en haut, cercles de hauteur 0°, 30°, 60°
+      // Vue du ciel (skyplot) : Nord en haut, cercles de hauteur 0°, 30°, 60°, une couleur par constellation
       dessinerFond('#10233a');
       ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1;
-      for (const el of [0, 30, 60]) { ctx.beginPath(); ctx.arc(CX, CY, 190 * (90 - el) / 90, 0, Math.PI * 2); ctx.stroke(); }
+      for (const h of [0, 30, 60]) { ctx.beginPath(); ctx.arc(CX, CY, 190 * (90 - h) / 90, 0, Math.PI * 2); ctx.stroke(); }
+      ctx.beginPath(); ctx.moveTo(CX - 190, CY); ctx.lineTo(CX + 190, CY); ctx.moveTo(CX, CY - 190); ctx.lineTo(CX, CY + 190); ctx.stroke();
       if (sousArbres) { ctx.fillStyle = 'rgba(40,90,40,.55)'; ctx.beginPath(); ctx.arc(CX, CY, 190, 0, Math.PI * 2); ctx.arc(CX, CY, 190 * 25 / 90, 0, Math.PI * 2, true); ctx.fill(); }
       ctx.fillStyle = '#fff'; ctx.font = 'bold 16px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText('N', CX, CY - 200);
-      for (const s of SATELLITES) {
-        const r = 190 * (90 - s.el) / 90, a = s.az * Math.PI / 180;
-        const vu = visibles.includes(s);
-        ctx.fillStyle = vu ? '#4cd964' : '#777';
-        ctx.beginPath(); ctx.arc(CX + Math.sin(a) * r, CY - Math.cos(a) * r, 8, 0, Math.PI * 2); ctx.fill();
+      ctx.font = '11px Arial'; ctx.fillStyle = 'rgba(255,255,255,.6)';
+      ctx.fillText('30°', CX + 4, CY - 190 * 60 / 90 - 8); ctx.fillText('60°', CX + 4, CY - 190 * 30 / 90 - 8);
+      for (const s of suivis) {
+        const r = 190 * (90 - s.el) / 90, a = s.az * Math.PI / 180, x = CX + Math.sin(a) * r, y = CY - Math.cos(a) * r;
+        ctx.fillStyle = masque(s) ? '#666' : CONSTELLATIONS[s.c].couleur;
+        ctx.beginPath(); ctx.arc(x, y, 9, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#10233a'; ctx.font = 'bold 8px Arial'; ctx.fillText(s.id, x, y + 0.5);
       }
+      // Légende des constellations
+      ctx.font = 'bold 11px Arial'; ctx.textAlign = 'left';
+      Object.values(CONSTELLATIONS).forEach((c, i) => { ctx.fillStyle = c.couleur; ctx.fillText(`● ${c.nom}`, CX - 80 + (i % 2) * 90, CY + 150 + Math.floor(i / 2) * 15); });
     },
-    valider() { if (mesure) this.resolve({ solution, ...mesure }); },
+    valider() { if (mesure && t >= T_RECHERCHE) this.resolve({ solution, ...mesure }); },
   });
 }
 
@@ -2486,10 +2941,12 @@ function viseeStation({ titre, quoi, station, mesurerDistance, hauteurPrisme = n
   const T = objet, D = station.D, r = T.rayonFut;
   const surPrisme = quoi === 'pied' && hauteurPrisme !== null;
   // Hauteur angulaire (rad) d'un point du château d'eau à la hauteur h au-dessus du pied, sur un rayon rr
-  const elev = (h, rr) => Math.atan2(T.altitudePied + h - station.H, D - rr);
+  // (profilPlat : les parties plus larges que la face visée, comme le tablier d'un pont, restent horizontales)
+  const elev = (h, rr) => Math.atan2(T.altitudePied + h - station.H, D - (T.profilPlat && rr > r ? 0 : rr));
   const ePied = elev(0, r), eHautFut = elev(T.hautFace, r);
   let alpha = signeAleatoire() * (2 + Math.random() * 3) * Math.PI / 180;               // écart horizontal à l'axe
-  let e = quoi === 'pied' ? elev(8, r) : elev(12, r);                                  // départ approximatif
+  // Visée de départ approximative, adaptée à la hauteur de l'objet (château d'eau, clocher, pile de pont…)
+  let e = quoi === 'pied' ? elev(Math.min(8, T.hautFace * 0.6), r) : elev(Math.min(12, T.hautFace * 0.8), r);
   let resultat = null;
   // Deux champs : le collimateur (vue large, pour trouver la cible) et la lunette (pointé fin)
   let collimateur = true;
@@ -2498,13 +2955,13 @@ function viseeStation({ titre, quoi, station, mesurerDistance, hauteurPrisme = n
   consigne(titre);
   elInstPanneau.innerHTML = `
     <p>Trouve la cible dans le <b>collimateur</b> (vue large), puis passe à la <b>lunette</b> avec <kbd>Espace</kbd> pour pointer finement.</p>
-    <p>Vise avec les <kbd>flèches</kbd> ou en glissant la souris (<kbd>Maj</kbd> = mouvement fin).</p>
+    <p>Vise avec <kbd>Z</kbd> <kbd>Q</kbd> <kbd>S</kbd> <kbd>D</kbd> ou en glissant la souris (<kbd>Maj</kbd> = mouvement fin).</p>
     <p>${surPrisme ? `Le porte-prisme tient la canne verticale à la base du fût, prisme à <b>${fr(hauteurPrisme, 3)} m</b> du sol. Place la croix <b>au centre du prisme</b>, puis mesure.`
       : quoi === 'pied' ? 'Place la croix <b>exactement à la base du fût</b>, là où il touche le sol, puis mesure (le laser sans réflecteur donne la distance).'
       : `Place la croix <b>sur ${texteSommet}</b>, puis mesure l'angle.`}</p>
     <div class="ecranInst" id="ecranStation"></div>
     <p id="etatStation"></p>
-    <button class="bouton" id="btnValider">Mesurer (Entrée)</button>`;
+    <button class="bouton" id="btnValider">Relever (R)</button>`;
   const elEcran = document.getElementById('ecranStation'), elEtat = document.getElementById('etatStation');
   const xDe = a => CX + (a - alpha) * k, yDe = el => CY - (el - e) * k;
   const angleV = () => 100 - versGonAngle(e) + station.erreurV;   // angle zénithal affiché (gon)
@@ -2525,7 +2982,7 @@ function viseeStation({ titre, quoi, station, mesurerDistance, hauteurPrisme = n
       ctx.clearRect(0, 0, cvs.width, cvs.height);
       ctx.beginPath(); ctx.arc(CX, CY, RAYON_VUE, 0, Math.PI * 2); ctx.clip();
       ctx.fillStyle = '#bcd8ee'; ctx.fillRect(0, 0, cvs.width, cvs.height);                     // ciel
-      ctx.fillStyle = '#7a9a55'; ctx.fillRect(0, yDe(ePied), cvs.width, cvs.height);            // sol
+      ctx.fillStyle = T.couleurSol || '#7a9a55'; ctx.fillRect(0, yDe(ePied), cvs.width, cvs.height);   // sol (ou eau)
       // Silhouette du château d'eau (profil de révolution vu de face)
       const P = T.profil;
       ctx.beginPath();
@@ -2635,7 +3092,7 @@ function mesureChateau() {
       dessinerFond('#2b3a2f');
       elInstPanneau.innerHTML = `${donnees}<p><b>Hauteur (m) :</b> <input type="text" id="champHauteur" placeholder="ex. 24,87" autocomplete="off"></p>
         <p><small>Rappel : avec V en grades, cotan V = 1 / tan(V × π / 200). Règle ta calculatrice en grades !</small></p><p id="etatH"></p>
-        <button class="bouton" id="btnValider">Valider (Entrée)</button>`;
+        <button class="bouton" id="btnValider">Valider (Entrée ou R)</button>`;
       resultat.hauteurEleve = await etape({
         debut: brancherValidation,
         valider() {
@@ -2664,7 +3121,7 @@ function saisieCalcul(titre, donnees, libelle, exemple) {
   dessinerFond('#2b3a2f');
   elInstPanneau.innerHTML = `${donnees}<p><b>${libelle} (m) :</b> <input type="text" id="champCalcul" placeholder="ex. ${exemple}" autocomplete="off"></p>
     <p><small>Rappel : avec V en grades, cotan V = 1 / tan(V × π / 200). Règle ta calculatrice en grades !</small></p><p id="etatCalcul"></p>
-    <button class="bouton" id="btnValider">Valider (Entrée)</button>`;
+    <button class="bouton" id="btnValider">Valider (Entrée ou R)</button>`;
   return etape({
     debut: brancherValidation,
     valider() {
@@ -2719,21 +3176,25 @@ function mesureEglise() {
 // === VISÉE D'UN PRISME (étang, rivière, carrière) ===
 // =====================================================================
 // D : distance horizontale ; dh : altitude du centre du prisme − altitude de l'instrument
-function viseePrisme({ titre, consigneVisee, station, D, dh, hp, decor = 'herbe', altEau = null }) {
-  const ePrisme = Math.atan2(dh, D), eSol = Math.atan2(dh - hp, D);
+// cible : 'prisme' (distance + angles) ou 'jalon' (angles seulement : pas de réflecteur)
+function viseePrisme({ titre, consigneVisee, station, D, dh, hp, decor = 'herbe', altEau = null, cible = 'prisme' }) {
+  const surJalon = cible === 'jalon';
+  const ePrisme = Math.atan2(dh, D), eSol = Math.atan2(dh - hp, D), eHautJalon = Math.atan2(dh - hp + 2, D);
   let alpha = signeAleatoire() * (2 + Math.random() * 3) * Math.PI / 180;
   let e = ePrisme + signeAleatoire() * (1 + Math.random() * 1.5) * Math.PI / 180;
   let collimateur = true;
   const kLunette = RAYON_VUE / DEMI_CHAMP_STATION, kLarge = kLunette / 15;
   let k = kLarge;
   const angleV = () => 100 - versGonAngle(e) + station.erreurV;
+  // Angle horizontal lu sur la station : son zéro (origineHz) est arbitraire, seules les différences comptent
+  const angleHz = () => ((station.gisementCible + (station.origineHz || 0) + versGonAngle(alpha)) % 400 + 400) % 400;
   consigne(titre);
   elInstPanneau.innerHTML = `
-    <p>Trouve le prisme dans le <b>collimateur</b>, puis passe à la <b>lunette</b> avec <kbd>Espace</kbd>.</p>
-    <p>Vise avec les <kbd>flèches</kbd> ou en glissant la souris (<kbd>Maj</kbd> = fin).</p>
-    <p>${consigneVisee} Place la croix <b>au centre du prisme</b> (hauteur ${fr(hp, 3)} m), puis mesure.</p>
+    <p>Trouve ${surJalon ? 'le jalon' : 'le prisme'} dans le <b>collimateur</b>, puis passe à la <b>lunette</b> avec <kbd>Espace</kbd>.</p>
+    <p>Vise avec <kbd>Z</kbd> <kbd>Q</kbd> <kbd>S</kbd> <kbd>D</kbd> ou en glissant la souris (<kbd>Maj</kbd> = fin).</p>
+    <p>${consigneVisee} ${surJalon ? 'Place le fil vertical <b>exactement sur le jalon</b> (seul l\'angle horizontal compte), puis relève.' : `Place la croix <b>au centre du prisme</b> (hauteur ${fr(hp, 3)} m), puis mesure.`}</p>
     <div class="ecranInst" id="ecranStation"></div><p id="etatStation"></p>
-    <button class="bouton" id="btnValider">Mesurer (Entrée)</button>`;
+    <button class="bouton" id="btnValider">Relever (R)</button>`;
   const elEcran = document.getElementById('ecranStation'), elEtat = document.getElementById('etatStation');
   const xDe = a => CX + (a - alpha) * k, yDe = el => CY - (el - e) * k;
   return etape({
@@ -2764,12 +3225,22 @@ function viseePrisme({ titre, consigneVisee, station, D, dh, hp, decor = 'herbe'
           ctx.fillStyle = '#4a86b0'; ctx.fillRect(0, yDe(eSol) + 2, cvs.width, Math.max(0, yDe(eEau) - yDe(eSol)));
         }
       }
-      // Canne et prisme
-      const rp = Math.max(3, 0.032 / D * k);
-      ctx.strokeStyle = '#d0d0d0'; ctx.lineWidth = Math.max(1.5, 0.012 / D * k);
-      ctx.beginPath(); ctx.moveTo(xDe(0), yDe(eSol)); ctx.lineTo(xDe(0), yDe(ePrisme)); ctx.stroke();
-      ctx.fillStyle = '#f2b705'; ctx.beginPath(); ctx.arc(xDe(0), yDe(ePrisme), rp * 1.6, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#5b8fa8'; ctx.beginPath(); ctx.arc(xDe(0), yDe(ePrisme), rp, 0, Math.PI * 2); ctx.fill();
+      if (surJalon) {
+        // Jalon rouge et blanc de 2 m (bandes de 50 cm)
+        const l = Math.max(2, 0.03 / D * k);
+        for (let b = 0; b < 4; b++) {
+          ctx.fillStyle = b % 2 ? '#f5f5f5' : '#d42020';
+          const y1 = yDe(Math.atan2(dh - hp + b * 0.5, D)), y2 = yDe(Math.atan2(dh - hp + (b + 1) * 0.5, D));
+          ctx.fillRect(xDe(0) - l / 2, y2, l, y1 - y2);
+        }
+      } else {
+        // Canne et prisme
+        const rp = Math.max(3, 0.032 / D * k);
+        ctx.strokeStyle = '#d0d0d0'; ctx.lineWidth = Math.max(1.5, 0.012 / D * k);
+        ctx.beginPath(); ctx.moveTo(xDe(0), yDe(eSol)); ctx.lineTo(xDe(0), yDe(ePrisme)); ctx.stroke();
+        ctx.fillStyle = '#f2b705'; ctx.beginPath(); ctx.arc(xDe(0), yDe(ePrisme), rp * 1.6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#5b8fa8'; ctx.beginPath(); ctx.arc(xDe(0), yDe(ePrisme), rp, 0, Math.PI * 2); ctx.fill();
+      }
       // Réticule
       ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
       ctx.fillText(collimateur ? 'COLLIMATEUR · Espace = lunette' : 'LUNETTE · Espace = collimateur', CX, CY - RAYON_VUE + 34);
@@ -2780,14 +3251,18 @@ function viseePrisme({ titre, consigneVisee, station, D, dh, hp, decor = 'herbe'
       ctx.stroke();
       ctx.beginPath(); ctx.arc(CX, CY, 12, 0, Math.PI * 2); ctx.stroke();
       ctx.restore();
-      const Hz = ((station.gisementCible + versGonAngle(alpha)) % 400 + 400) % 400;
-      elEcran.innerHTML = `Hz = ${fr(Hz, 4)} gon<br>V &nbsp;= ${fr(angleV(), 4)} gon`;
+      elEcran.innerHTML = `Hz = ${fr(angleHz(), 4)} gon<br>V &nbsp;= ${fr(angleV(), 4)} gon`;
     },
     valider() {
-      if (collimateur) { elEtat.innerHTML = '<span class="ko">Passe en lunette (Espace) pour pointer précisément le prisme.</span>'; return; }
+      if (collimateur) { elEtat.innerHTML = `<span class="ko">Passe en lunette (Espace) pour pointer précisément ${surJalon ? 'le jalon' : 'le prisme'}.</span>`; return; }
       const dx = alpha * D, dy = (e - ePrisme) * D;
+      if (surJalon) {
+        if (Math.abs(dx) > 0.03 || e < eSol || e > eHautJalon) { elEtat.innerHTML = '<span class="ko">Le fil vertical n\'est pas sur le jalon.</span>'; return; }
+        this.resolve({ V: angleV(), Dh: null, Hz: angleHz() });
+        return;
+      }
       if (Math.hypot(dx, dy) > 0.06) { elEtat.innerHTML = '<span class="ko">Pas de retour du signal : vise le centre du prisme.</span>'; return; }
-      this.resolve({ V: angleV(), Dh: D + gauss() * 0.001 });
+      this.resolve({ V: angleV(), Dh: D + gauss() * 0.001, Hz: angleHz() });
     },
   });
 }
@@ -2823,7 +3298,7 @@ function mesureTraversee(point) {
       dessinerFond('#222');
       ctx.fillStyle = '#b9f5c3'; ctx.font = 'bold 54px Consolas, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(`${fr(mesuree, 3)} m`, CX, CY);
-      elInstPanneau.innerHTML = `<p>Le télémètre est posé sur ${de.nom} et vise le jalon planté sur ${vers.nom} : il affiche la distance horizontale. Note-la !</p><button class="bouton" id="btnValider">Noter (Entrée)</button>`;
+      elInstPanneau.innerHTML = `<p>Le télémètre est posé sur ${de.nom} et vise le jalon planté sur ${vers.nom} : il affiche la distance horizontale. Note-la !</p><button class="bouton" id="btnValider">Noter (R)</button>`;
       await etape({ debut: brancherValidation, valider() { this.resolve(); } });
     }
     const ecart = mesuree - vraie;
@@ -2833,6 +3308,354 @@ function mesureTraversee(point) {
     if (niveau.retourImmediat) html += `<p>Valeur vraie : ${fr(vraie, 3)} m · écart ${ecartTexte(ecart)} ${verdict(ecart, niveau.distance)}</p>`;
     await ecranResultat(`Mission ${mission.libelle} terminée`, html);
   }, () => retirer && retirer());
+}
+
+// =====================================================================
+// === MISSION : LARGEUR DE LA RIVIÈRE (point inaccessible, 2 stations) ===
+// =====================================================================
+const sinGon = g => Math.sin(g * Math.PI / 200);
+// Angle (≤ 200 gon) entre deux directions lues sur le cercle horizontal
+const ecartHz = (h1, h2) => { const d = ((h2 - h1) % 400 + 400) % 400; return d > 200 ? 400 - d : d; };
+
+// Croquis du triangle C1–C2–D, complété au fur et à mesure des mesures
+function dessinerCroquisRiviere(r) {
+  const S = MONDE.pointsSpeciaux, pts = [S.C1, S.C2, S.D];
+  dessinerFond('#fbf8ef');
+  const cx = (S.C1.x + S.C2.x + S.D.x) / 3, cz = (S.C1.z + S.C2.z + S.D.z) / 3, ech = 12;
+  const P = p => [CX + (p.x - cx) * ech, CY + (p.z - cz) * ech];
+  ctx.save(); ctx.beginPath(); ctx.arc(CX, CY, RAYON_VUE, 0, Math.PI * 2); ctx.clip();
+  // Rivière (bande bleue entre les berges)
+  ctx.fillStyle = 'rgba(74,134,176,.35)'; ctx.beginPath();
+  for (let z = cz - 30; z <= cz + 30; z += 2) ctx.lineTo(...P({ x: xRiviere(z) - 5.5, z }));
+  for (let z = cz + 30; z >= cz - 30; z -= 2) ctx.lineTo(...P({ x: xRiviere(z) + 5.5, z }));
+  ctx.fill();
+  // Triangle
+  ctx.strokeStyle = '#1d2733'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(...P(S.C1)); ctx.lineTo(...P(S.C2)); ctx.lineTo(...P(S.D)); ctx.closePath(); ctx.stroke();
+  // Largeur : perpendiculaire de D sur C1–C2 (pointillés)
+  const ux = S.C2.x - S.C1.x, uz = S.C2.z - S.C1.z, L2 = ux * ux + uz * uz;
+  const t = ((S.D.x - S.C1.x) * ux + (S.D.z - S.C1.z) * uz) / L2, H = { x: S.C1.x + ux * t, z: S.C1.z + uz * t };
+  ctx.setLineDash([6, 4]); ctx.strokeStyle = '#c41e1e';
+  ctx.beginPath(); ctx.moveTo(...P(S.D)); ctx.lineTo(...P(H)); ctx.stroke(); ctx.setLineDash([]);
+  // Points et étiquettes
+  ctx.font = 'bold 15px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const p of pts) { const [u, v] = P(p); ctx.fillStyle = '#e35d00'; ctx.beginPath(); ctx.arc(u, v, 5, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#1d2733'; ctx.fillText(p.nom, u + (p === S.D ? 22 : -24), v); }
+  const txt = (v, d, unite) => v === undefined || v === null ? '?' : `${fr(v, d)} ${unite}`;
+  ctx.font = '13px Arial';
+  const [a1, b1] = P(S.C1), [a2, b2] = P(S.C2), [a3, b3] = P(S.D), [ah, bh] = P(H);
+  ctx.fillStyle = '#24527a';
+  ctx.fillText(`b = ${txt(r.base, 3, 'm')}`, (a1 + a2) / 2 - 58, (b1 + b2) / 2);
+  ctx.fillText(`α = ${txt(r.alpha, 4, 'gon')}`, a1 + 10, b1 - 22);
+  ctx.fillText(`β = ${txt(r.beta, 4, 'gon')}`, a2 + 10, b2 + 22);
+  ctx.fillText(`γ = ${txt(r.gamma, 4, 'gon')}`, a3 + 10, b3 - 24);
+  ctx.fillStyle = '#c41e1e';
+  ctx.fillText(`largeur = ${txt(r.largeur, 3, 'm')}`, (a3 + ah) / 2, (b3 + bh) / 2 + 18);
+  ctx.fillStyle = '#4a5866'; ctx.font = 'italic 12px Arial';
+  ctx.fillText('Croquis — Nord en haut', CX, CY + RAYON_VUE - 40);
+  ctx.restore();
+}
+
+// Calculs du triangle : γ = 200 − α − β ; C1D = b · sin β / sin γ ; largeur = C1D · sin α
+function calculerRiviere() {
+  const R = RESULTATS.riviere, s1 = R.C1, s2 = R.C2;
+  const res = { base: s1 && s1.Dh, alpha: s1 && s1.angle, beta: s2 && s2.angle };
+  if (s1 && s2) {
+    res.base = (s1.Dh + s2.Dh) / 2;
+    res.gamma = 200 - res.alpha - res.beta;
+    res.C1D = res.base * sinGon(res.beta) / sinGon(res.gamma);
+    res.largeur = res.C1D * sinGon(res.alpha);
+  }
+  return res;
+}
+
+function mesureRiviere(point) {
+  const { ici, autre, cible } = point.objet;
+  const retirer = poserStation(ici.x, ici.z, 'station');
+  ouvrirInstrument(`Station totale sur ${ici.nom} — largeur de la rivière (point inaccessible)`);
+  executer(async () => {
+    const hp = 1.3, station = { H: ici.altitude + 1.5 + Math.random() * 0.1, erreurV: 0, origineHz: Math.random() * 400 };
+    const q = await calage(`Calage de la station totale au-dessus de ${ici.nom}`, `<p>La station est centrée sur ${ici.nom}. Le porte-prisme tient le prisme sur ${autre.nom} ; le jalon ${cible.nom} est planté de l'autre côté de la rivière.</p>`);
+    station.erreurV = signeAleatoire() * q * 0.0015;
+    const Da = Math.hypot(autre.x - ici.x, autre.z - ici.z);
+    station.gisementCible = gisement(autre.x - ici.x, autre.z - ici.z);
+    const vA = await viseePrisme({ titre: `Visée 1 : prisme sur ${autre.nom} (base, sur la même rive)`, consigneVisee: `Le porte-prisme est sur ${autre.nom}.`, station, D: Da, dh: autre.altitude + hp - station.H, hp });
+    const Dd = Math.hypot(cible.x - ici.x, cible.z - ici.z);
+    station.gisementCible = gisement(cible.x - ici.x, cible.z - ici.z);
+    const vD = await viseePrisme({ titre: `Visée 2 : jalon ${cible.nom} sur la rive opposée`, consigneVisee: 'Le jalon est planté sur la rive est, de l\'autre côté de l\'eau.', station, D: Dd, dh: cible.altitude - station.H, hp: 0, altEau: niveauEau(cible.z), cible: 'jalon' });
+    const angle = ecartHz(vA.Hz, vD.Hz);
+    RESULTATS.riviere[ici.nom] = { HzBase: vA.Hz, HzD: vD.Hz, Dh: vA.Dh, angle, calage: q };
+    marquerFait(point);
+    const r = calculerRiviere();
+    dessinerCroquisRiviere(r);
+    let html = `<div class="ecranInst">Hz ${autre.nom} = ${fr(vA.Hz, 4)} gon · Dh = ${fr(vA.Dh, 3)} m<br>Hz ${cible.nom} = ${fr(vD.Hz, 4)} gon</div>
+      <p>Angle en ${ici.nom} entre ${autre.nom} et ${cible.nom} : <b>${fr(angle, 4)} gon</b> (différence des lectures Hz).</p>`;
+    if (r.gamma === undefined) {
+      html += `<p>Va maintenant stationner sur ${autre.nom} pour mesurer le second angle du triangle.</p>`;
+      await ecranResultat(`Station ${ici.nom} enregistrée`, html, true);
+      return;
+    }
+    html += `<p>γ = 200 − α − β = <b>${fr(r.gamma, 4)} gon</b> · C1D = b × sin β / sin γ = ${fr(r.C1D, 3)} m<br>Largeur = C1D × sin α</p>`;
+    if (niveau.calculEleve) {
+      RESULTATS.riviere.largeurEleve = await saisieCalcul('Calcule la largeur de la rivière', `<div class="ecranInst">b = ${fr(r.base, 3)} m · α = ${fr(r.alpha, 4)} gon · β = ${fr(r.beta, 4)} gon</div><p>Résous le triangle (loi des sinus), puis largeur = C1D × sin α.</p>`, 'Largeur', '13,00');
+      dessinerCroquisRiviere(r);
+    }
+    RESULTATS.riviere.largeurMesuree = r.largeur;
+    const retenue = RESULTATS.riviere.largeurEleve ?? r.largeur, ecart = retenue - MONDE.largeurRiviere;
+    html += `<p>Largeur ${RESULTATS.riviere.largeurEleve !== undefined ? 'calculée par toi' : 'calculée'} : <b>${fr(retenue, 3)} m</b></p>`;
+    if (RESULTATS.riviere.largeurEleve !== undefined && Math.abs(RESULTATS.riviere.largeurEleve - r.largeur) > 0.01)
+      html += `<p class="ko">Avec tes mesures, le calcul donne ${fr(r.largeur, 3)} m. Vérifie ton calcul (calculatrice en grades ?).</p>`;
+    if (niveau.retourImmediat) html += `<p>Largeur vraie : ${fr(MONDE.largeurRiviere, 3)} m · écart ${ecartTexte(ecart)} ${verdict(ecart, niveau.hauteur)}</p>`;
+    await ecranResultat('Mission terminée : largeur de la rivière', html, true);
+  }, retirer);
+}
+
+// =====================================================================
+// === MISSION : LE PONT À MOUSSON (longueur et hauteur) ===
+// =====================================================================
+function mesurePont() {
+  const P = MONDE.pont, St = MONDE.pointsSpeciaux.S30, hp = 1.3;
+  const hi = Math.round((1.5 + Math.random() * 0.1) * 1000) / 1000;
+  const station = { H: St.altitude + hi, erreurV: 0, origineHz: Math.random() * 400 };
+  const retirer = poserStation(St.x, St.z, 'station');
+  ouvrirInstrument('Station totale sur S30 — Pont à Mousson');
+  executer(async () => {
+    const q = await calage('Calage de la station totale au-dessus de S30', '<p>La station est centrée sur S30. Le porte-prisme va se placer aux deux extrémités du tablier.</p>');
+    station.erreurV = signeAleatoire() * q * 0.0015;
+    // 1 et 2 : prisme aux deux extrémités du tablier (longueur)
+    const visees = [];
+    for (const [nom, x, hT] of [['extrémité Ouest', P.xOuest, P.hOuest], ['extrémité Est', P.xEst, P.hEst]]) {
+      const D = Math.hypot(x - St.x, P.z - St.z);
+      station.gisementCible = gisement(x - St.x, P.z - St.z);
+      visees.push(await viseePrisme({ titre: `Visée ${visees.length + 1} : prisme à l'${nom} du tablier`, consigneVisee: `Le porte-prisme est posé sur le tablier, à l'${nom}.`, station, D, dh: hT + hp - station.H, hp, altEau: P.eau }));
+    }
+    const [v1, v2] = visees, dHz = ecartHz(v1.Hz, v2.Hz);
+    const longueurMesuree = Math.sqrt(v1.Dh ** 2 + v2.Dh ** 2 - 2 * v1.Dh * v2.Dh * Math.cos(dHz * Math.PI / 200));
+    // 3 et 4 : hauteur au droit de la pile (laser sur la pile au ras de l'eau, puis dessus du tablier)
+    const O = P.objetVisee, stH = { ...station, D: Math.hypot(O.x - St.x, O.z - St.z), gisementAxe: gisement(O.x - St.x, O.z - St.z) };
+    const pied = await viseeStation({ titre: 'Visée 3 : la pile au ras de l\'eau (laser sans réflecteur)', quoi: 'pied', station: stH, mesurerDistance: true, objet: O });
+    const sommet = await viseeStation({ titre: 'Visée 4 : le dessus du tablier, au-dessus de la pile', quoi: 'sommet', station: stH, objet: O, texteSommet: 'l\'arête supérieure du tablier, au-dessus de la pile' });
+    const DhAxe = pied.Dh + O.rayonFut;
+    const hauteurMesuree = DhAxe * cotGon(sommet.V) - pied.Dh * cotGon(pied.V);
+    const r = { Dh1: v1.Dh, Hz1: v1.Hz, Dh2: v2.Dh, Hz2: v2.Hz, dHz, longueurMesuree, DhPile: pied.Dh, V1: pied.V, V2: sommet.V, hauteurMesuree, calage: q };
+    const donnees = `<div class="ecranInst">Ouest : Dh₁ = ${fr(v1.Dh, 3)} m · Hz₁ = ${fr(v1.Hz, 4)} gon<br>Est : Dh₂ = ${fr(v2.Dh, 3)} m · Hz₂ = ${fr(v2.Hz, 4)} gon<br>
+      Pile : Dh = ${fr(pied.Dh, 3)} m · V₁ = ${fr(pied.V, 4)} gon · tablier V₂ = ${fr(sommet.V, 4)} gon</div>
+      <p>Longueur : ΔHz = ${fr(dHz, 4)} gon, L² = Dh₁² + Dh₂² − 2·Dh₁·Dh₂·cos ΔHz.<br>
+      Hauteur : Dh(axe) = Dh(face) + rayon de la pile (${fr(O.rayonFut, 2)} m) ; H = Dh(axe) × cotan V₂ − Dh(face) × cotan V₁.</p>`;
+    if (niveau.calculEleve) {
+      r.longueurEleve = await saisieCalcul('Calcule la longueur du tablier', donnees, 'Longueur', '18,00');
+      r.hauteurEleve = await saisieCalcul('Calcule la hauteur du tablier au-dessus de l\'eau', donnees, 'Hauteur', '3,20');
+    }
+    RESULTATS.pont = r;
+    POINTS_MISSION.filter(p => p.mission === 11).forEach(marquerFait);
+    const L = r.longueurEleve ?? longueurMesuree, H = r.hauteurEleve ?? hauteurMesuree;
+    let html = `${donnees}<p>Longueur : <b>${fr(L, 3)} m</b> · Hauteur : <b>${fr(H, 3)} m</b></p>`;
+    if (r.longueurEleve !== undefined && (Math.abs(r.longueurEleve - longueurMesuree) > 0.01 || Math.abs(r.hauteurEleve - hauteurMesuree) > 0.01))
+      html += `<p class="ko">Avec tes mesures, le calcul donne L = ${fr(longueurMesuree, 3)} m et H = ${fr(hauteurMesuree, 3)} m. Vérifie tes calculs (mode grades ?).</p>`;
+    if (niveau.retourImmediat) html += `<p>Longueur vraie : ${fr(P.longueur, 3)} m · écart ${ecartTexte(L - P.longueur)} ${verdict(L - P.longueur, niveau.distance)}<br>
+      Hauteur vraie : ${fr(P.hauteurEau, 3)} m · écart ${ecartTexte(H - P.hauteurEau)} ${verdict(H - P.hauteurEau, niveau.hauteur)}</p>`;
+    await ecranResultat('Mission terminée : le Pont à Mousson', html);
+  }, retirer);
+}
+
+// =====================================================================
+// === MISSION : DÉTECTION D'UN RÉSEAU ÉLECTRIQUE ENTERRÉ ===
+// =====================================================================
+const detection = { active: false, marques: [] };
+const COUVERTURE_MINI = 0.8;   // part du tracé à révéler pour terminer
+const RAYON_REVELATION = 3;     // une bonne marque révèle le câble sur ± 3 m
+
+// Point du câble le plus proche (distance horizontale et position)
+function plusProcheCable(x, z) {
+  let best = null, dMin = Infinity;
+  for (const p of MONDE.reseau.trace) { const d = Math.hypot(p.x - x, p.z - z); if (d < dMin) { dMin = d; best = p; } }
+  return { point: best, d: dMin };
+}
+const couvertureReseau = () => MONDE.reseau.trace.filter(p => p.vu).length / MONDE.reseau.trace.length;
+
+function brancherGenerateur(point) {
+  if (detection.active) { afficherMessage('Le générateur est déjà branché : suis le signal du détecteur.'); return; }
+  detection.active = true;
+  afficherMessage('Générateur branché sur le coffret : le câble est sous signal. Suis-le avec le détecteur et marque-le (R).', 5000);
+  sauvegarder(false);
+}
+
+// Affichage du détecteur (appelé régulièrement)
+function majDetecteur() {
+  const el = document.getElementById('detecteur');
+  const visible = detection.active && sac.has('detecteur') && !estInterieur(joueur.x) && !voiture.conduite && !missionTerminee(12);
+  el.classList.toggle('cache', !visible);
+  if (!visible) return;
+  const { point, d } = plusProcheCable(joueur.x, joueur.z);
+  // Signal : maximal à l'aplomb du câble, nul au-delà de 3 m (léger bruit de mesure)
+  const signal = clamp(Math.exp(-((d / 1.1) ** 2)) + (Math.random() - 0.5) * 0.04, 0, 1);
+  const barre = document.getElementById('detSignal');
+  barre.style.width = `${Math.round(signal * 100)}%`;
+  barre.style.background = signal > 0.85 ? '#2e7d32' : signal > 0.4 ? '#e8a019' : '#c0392b';
+  let texte;
+  if (d < 0.25) texte = `▲ À l'aplomb du câble · profondeur ≈ ${fr(MONDE.reseau.profondeur, 1)} m`;
+  else if (signal < 0.05) texte = 'Pas de signal : rapproche-toi du câble';
+  else {
+    // Gauche ou droite par rapport à la direction de la caméra
+    const rx = Math.cos(cam.yaw), rz = -Math.sin(cam.yaw);
+    texte = (point.x - joueur.x) * rx + (point.z - joueur.z) * rz > 0 ? 'Câble à droite ▶' : '◀ Câble à gauche';
+  }
+  document.getElementById('detTexte').textContent = `${texte} · signal ${Math.round(signal * 100)} %`;
+  document.getElementById('detCouverture').textContent = `${Math.round(couvertureReseau() * 100)} %`;
+}
+
+// Touche R : marque de peinture à la position du géomètre
+function marquerReseau() {
+  if (!detection.active || !sac.has('detecteur')) return;
+  if (!sac.has('bombe')) { afficherMessage('Il te faut la bombe de marquage pour marquer le tracé au sol.'); return; }
+  const R = MONDE.reseau, { d } = plusProcheCable(joueur.x, joueur.z);
+  if (d > 3) { afficherMessage('Aucun signal ici : ne marque pas au hasard !'); return; }
+  detection.marques.push({ x: joueur.x, z: joueur.z, d });
+  // Croix de peinture orange au sol
+  const croix = new THREE.Group(), sol = hauteurSol(joueur.x, joueur.z) + 0.03, m = new THREE.MeshBasicMaterial({ color: 0xff6a00 });
+  for (const a of [Math.PI / 4, -Math.PI / 4]) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.02, 0.08), m); b.rotation.y = a; croix.add(b); }
+  croix.position.set(joueur.x, sol, joueur.z);
+  R.groupeMarques.add(croix);
+  // Une marque proche du câble révèle le réseau aux alentours
+  if (d < 1) {
+    for (const p of R.trace) if (Math.hypot(p.x - joueur.x, p.z - joueur.z) < RAYON_REVELATION) { p.vu = true; p.mesh.visible = true; }
+    afficherMessage(`Point marqué : le tracé du réseau apparaît (${Math.round(couvertureReseau() * 100)} % révélé).`, 1800);
+  } else afficherMessage('Point marqué… mais le signal n\'était pas maximal : tu n\'es pas à l\'aplomb du câble.', 2500);
+}
+
+function terminerDetection(point) {
+  if (!detection.active) { afficherMessage('Commence par brancher le générateur sur le coffret électrique.'); return; }
+  const c = couvertureReseau();
+  if (c < COUVERTURE_MINI) { afficherMessage(`Le tracé n'est révélé qu'à ${Math.round(c * 100)} % : continue à suivre et marquer le câble (${Math.round(COUVERTURE_MINI * 100)} % minimum).`, 4500); return; }
+  const marques = detection.marques, ecartMoyen = moyenne(marques.map(m => m.d));
+  RESULTATS.reseau = { nbMarques: marques.length, ecartMoyen, couverture: c, longueur: MONDE.reseau.trace.length * 0.5 };
+  POINTS_MISSION.filter(p => p.mission === 12).forEach(marquerFait);
+  detection.active = false;
+  ouvrirInstrument('Détection de réseau terminée');
+  executer(async () => {
+    let html = `<p>Le câble électrique est repéré du coffret au poste (longueur ≈ ${fr(RESULTATS.reseau.longueur, 0)} m, profondeur ≈ ${fr(MONDE.reseau.profondeur, 1)} m).</p>
+      <p>${marques.length} marques de peinture · tracé révélé à ${Math.round(c * 100)} %</p>`;
+    if (niveau.retourImmediat) html += `<p>Écart moyen entre tes marques et le câble : <b>${ecartTexte(ecartMoyen).replace('+', '')}</b> ${verdict(ecartMoyen, niveau.distance * 10)}</p>`;
+    html += '<p>Sur un vrai chantier, ces marques permettent de reporter le réseau sur le plan (DT-DICT) avant de creuser.</p>';
+    await ecranResultat('Mission terminée : réseau électrique détecté', html);
+  });
+}
+
+// =====================================================================
+// === MISSION : PHOTOGRAMMÉTRIE PAR DRONE ===
+// =====================================================================
+// Caméra du drone (type mini-drone) : capteur 6,17 × 4,55 mm, focale 4,49 mm, 4 000 px de large
+const CAMERA_DRONE = { capteurL: 6.17, capteurH: 4.55, focale: 4.49, pixels: 4000 };
+const ZONE_DRONE = { longueur: 50, largeur: 40, vitesse: 6, autonomie: 20 };   // m, m, m/s, min
+
+function planDeVol(H, long, lat) {
+  const C = CAMERA_DRONE, Z = ZONE_DRONE;
+  const empriseL = H * C.capteurL / C.focale, empriseH = H * C.capteurH / C.focale;   // emprise au sol (m)
+  const gsd = empriseL / C.pixels * 100;                                              // cm par pixel
+  const pasPhotos = empriseH * (1 - long / 100), pasLignes = empriseL * (1 - lat / 100);
+  const nLignes = Math.ceil(Z.largeur / pasLignes) + 1, nParLigne = Math.ceil(Z.longueur / pasPhotos) + 1;
+  const trajet = nLignes * Z.longueur + (nLignes - 1) * pasLignes + 2 * H;              // aller-retour en hauteur compris
+  const minutes = (trajet / Z.vitesse + nLignes * nParLigne * 1.0) / 60 + 1;            // + 1 s par photo, + 1 min de marge
+  return { H, long, lat, empriseL, empriseH, gsd, pasPhotos, pasLignes, nLignes, nParLigne, photos: nLignes * nParLigne, minutes };
+}
+function verifierPlan(p) {
+  const c = CRITERES_DRONE[nomNiveau(niveau)];
+  return {
+    long: p.long >= c.long, lat: p.lat >= c.lat, gsd: p.gsd <= c.gsd + 1e-9,
+    hauteur: p.H <= 120, batterie: p.minutes <= ZONE_DRONE.autonomie,
+  };
+}
+
+// Plan de la zone avec les emprises des photos (vu de dessus)
+function dessinerPlanVol(p, avancement = 1) {
+  const Z = ZONE_DRONE, ech = 6, x0 = CX - Z.longueur / 2 * ech, y0 = CY - Z.largeur / 2 * ech;
+  dessinerFond('#e9efe4');
+  ctx.save(); ctx.beginPath(); ctx.arc(CX, CY, RAYON_VUE, 0, Math.PI * 2); ctx.clip();
+  // Carrière stylisée
+  ctx.fillStyle = '#c9b896'; ctx.beginPath(); ctx.arc(CX, CY, 14 * ech, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#a99b82'; ctx.beginPath(); ctx.arc(CX, CY, 9 * ech, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#857a6a'; ctx.beginPath(); ctx.arc(CX, CY, 4.5 * ech, 0, Math.PI * 2); ctx.fill();
+  // Emprises des photos (semi-transparentes : plus c'est foncé, plus le recouvrement est fort)
+  const total = p.photos, nVues = Math.floor(total * avancement);
+  ctx.fillStyle = 'rgba(94,53,177,0.10)'; ctx.strokeStyle = 'rgba(94,53,177,0.35)'; ctx.lineWidth = 1;
+  let k = 0, dernier = null;
+  for (let l = 0; l < p.nLignes; l++) for (let i = 0; i < p.nParLigne; i++) {
+    if (k++ >= nVues) break;
+    const ii = l % 2 ? p.nParLigne - 1 - i : i;   // trajet en aller-retour
+    const cxp = x0 + ii * p.pasPhotos * ech, cyp = y0 + l * p.pasLignes * ech;
+    ctx.fillRect(cxp - p.empriseH / 2 * ech, cyp - p.empriseL / 2 * ech, p.empriseH * ech, p.empriseL * ech);
+    ctx.strokeRect(cxp - p.empriseH / 2 * ech, cyp - p.empriseL / 2 * ech, p.empriseH * ech, p.empriseL * ech);
+    dernier = [cxp, cyp];
+  }
+  // Zone à couvrir et lignes de vol
+  ctx.strokeStyle = '#c41e1e'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.strokeRect(x0, y0, Z.longueur * ech, Z.largeur * ech); ctx.setLineDash([]);
+  ctx.strokeStyle = '#1d2733'; ctx.lineWidth = 1.2; ctx.beginPath();
+  for (let l = 0; l < p.nLignes; l++) { const y = y0 + l * p.pasLignes * ech; ctx.moveTo(x0, y); ctx.lineTo(x0 + Z.longueur * ech, y); }
+  ctx.stroke();
+  if (dernier && avancement < 1) { ctx.fillStyle = '#5e35b1'; ctx.beginPath(); ctx.arc(dernier[0], dernier[1], 6, 0, Math.PI * 2); ctx.fill(); }
+  ctx.fillStyle = '#1d2733'; ctx.font = '12px Arial'; ctx.textAlign = 'center';
+  ctx.fillText(`Zone à couvrir : ${Z.longueur} m × ${Z.largeur} m`, CX, y0 - 10);
+  ctx.restore();
+}
+
+function mesureDrone() {
+  ouvrirInstrument('Photogrammétrie par drone — plan de vol');
+  executer(async () => {
+    const c = CRITERES_DRONE[nomNiveau(niveau)];
+    // 1. Préparation du plan de vol
+    const plan = await etape({
+      debut(e) {
+        consigne('Prépare le plan de vol, puis lance le vol (R)');
+        elInstPanneau.innerHTML = `
+          <p><b>Hauteur de vol :</b> <span id="vH"></span> m<br><input type="range" id="rH" min="20" max="140" step="5" value="60" style="width:100%"></p>
+          <p><b>Recouvrement longitudinal :</b> <span id="vL"></span> %<br><input type="range" id="rL" min="40" max="90" step="5" value="60" style="width:100%"></p>
+          <p><b>Recouvrement latéral :</b> <span id="vT"></span> %<br><input type="range" id="rT" min="20" max="80" step="5" value="30" style="width:100%"></p>
+          <div class="ecranInst" id="calculVol"></div>
+          <p class="petit">Objectif : recouvrements ≥ ${c.long} % / ${c.lat} %, GSD ≤ ${fr(c.gsd, 1)} cm, hauteur ≤ 120 m (réglementation), vol ≤ ${ZONE_DRONE.autonomie} min (batterie).</p>
+          <button class="bouton" id="btnValider">Lancer le vol (R)</button>`;
+        const lire = () => planDeVol(+document.getElementById('rH').value, +document.getElementById('rL').value, +document.getElementById('rT').value);
+        const maj = () => {
+          const p = lire(), v = verifierPlan(p), ok = b => b ? '<span class="ok">✔</span>' : '<span class="ko">✘</span>';
+          document.getElementById('vH').textContent = p.H; document.getElementById('vL').textContent = p.long; document.getElementById('vT').textContent = p.lat;
+          document.getElementById('calculVol').innerHTML = `Emprise d'une photo : ${fr(p.empriseL, 1)} × ${fr(p.empriseH, 1)} m<br>
+            GSD : ${fr(p.gsd, 2)} cm/pixel ${ok(v.gsd)} · hauteur ${ok(v.hauteur)}<br>
+            Pas entre photos : ${fr(p.pasPhotos, 1)} m ${ok(v.long)} · entre lignes : ${fr(p.pasLignes, 1)} m ${ok(v.lat)}<br>
+            ${p.nLignes} lignes × ${p.nParLigne} = ${p.photos} photos · durée ≈ ${fr(p.minutes, 1)} min ${ok(v.batterie)}`;
+          dessinerPlanVol(p);
+          e.plan = p;
+        };
+        ['rH', 'rL', 'rT'].forEach(id => document.getElementById(id).addEventListener('input', maj));
+        maj();
+        brancherValidation(e);
+      },
+      valider() { this.resolve(this.plan); },
+    });
+    // 2. Vol : les photos s'ajoutent au plan
+    const v = verifierPlan(plan);
+    consigne('Vol en cours : le drone prend les photos…');
+    elInstPanneau.innerHTML = '<p>Le drone suit les lignes de vol et déclenche une photo à chaque pas.</p><div class="barre" style="height:14px"><div id="barreVol"></div></div>';
+    const coupure = v.batterie ? 1 : ZONE_DRONE.autonomie / plan.minutes;   // batterie vide avant la fin ?
+    await new Promise(fin => {
+      let a = 0;
+      const pas = () => {
+        a = Math.min(coupure, a + 0.025);
+        dessinerPlanVol(plan, a);
+        const b = document.getElementById('barreVol'); if (b) { b.style.width = `${Math.round(a * 100)}%`; b.style.background = '#5e35b1'; }
+        if (a < coupure) setTimeout(pas, 50); else fin();
+      };
+      pas();
+    });
+    // 3. Résultat
+    const criteres = [['Recouvrement longitudinal', v.long], ['Recouvrement latéral', v.lat], ['Taille de pixel (GSD)', v.gsd], ['Hauteur réglementaire (≤ 120 m)', v.hauteur], ['Autonomie de la batterie', v.batterie]];
+    RESULTATS.drone = { ...plan, ...Object.fromEntries(Object.entries(v).map(([k, b]) => [`ok_${k}`, b])), reussis: criteres.filter(([, b]) => b).length };
+    POINTS_MISSION.filter(p => p.mission === 13).forEach(marquerFait);
+    let html = `<table>${criteres.map(([n, b]) => `<tr><td style="text-align:left">${n}</td><td>${b ? '<span class="ok">✔</span>' : '<span class="ko">✘</span>'}</td></tr>`).join('')}</table>`;
+    if (!v.batterie) html += '<p class="ko">Batterie vide avant la fin du vol : la zone n\'est pas entièrement couverte !</p>';
+    if (!v.long || !v.lat) html += '<p class="ko">Recouvrement insuffisant : le logiciel de photogrammétrie ne pourra pas assembler toutes les photos (trous dans le modèle 3D).</p>';
+    if (!v.gsd) html += '<p class="ko">Pixels trop grands : l\'orthophoto ne sera pas assez précise. Vole plus bas.</p>';
+    if (!v.hauteur) html += '<p class="ko">Au-delà de 120 m, le vol est interdit par la réglementation.</p>';
+    if (criteres.every(([, b]) => b)) html += `<p class="ok">Vol réussi : ${plan.photos} photos prêtes pour produire l'orthophoto et le modèle 3D de la carrière.</p>`;
+    await ecranResultat('Mission terminée : vol photogrammétrique', html, true);
+  });
 }
 
 // =====================================================================
@@ -2874,26 +3697,94 @@ function mesureCarriere() {
 // =====================================================================
 // === MISSION BONUS : DISTANCES (décamètre ou télémètre) ===
 // =====================================================================
-function lectureRuban(vraie, quoi) {
-  const pxParCm = 13, centre = vraie + (Math.random() - 0.5) * 0.12;
+// --- Croquis en plan des mesures de distance (moitié haute de la vue) ---
+// type : 'chemin', 'facade' (maison Nosiuol) ou 'grange' ; nom : mesure en cours ; valeurs : mesures déjà notées
+function dessinerCroquisDistance(type, nom, valeurs) {
+  const txt = v => v === undefined ? '? m' : `${fr(v, 2)} m`;
+  const cote = (x1, y1, x2, y2, texte, actif, decal = 0) => {
+    // Ligne de cote avec flèches et valeur
+    ctx.strokeStyle = actif ? '#e35d00' : '#24527a'; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = actif ? 2.5 : 1.5;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    const a = Math.atan2(y2 - y1, x2 - x1);
+    for (const [x, y, s] of [[x1, y1, 1], [x2, y2, -1]]) {
+      ctx.beginPath(); ctx.moveTo(x, y);
+      ctx.lineTo(x + s * 8 * Math.cos(a) - 4 * Math.sin(a), y + s * 8 * Math.sin(a) + 4 * Math.cos(a));
+      ctx.lineTo(x + s * 8 * Math.cos(a) + 4 * Math.sin(a), y + s * 8 * Math.sin(a) - 4 * Math.cos(a)); ctx.fill();
+    }
+    ctx.font = `${actif ? 'bold ' : ''}13px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    ctx.save(); ctx.translate(mx - Math.sin(a) * (12 + decal), my + Math.cos(a) * (12 + decal));
+    ctx.rotate(Math.abs(a) > Math.PI / 2 ? a + Math.PI : a); ctx.fillText(texte, 0, 0); ctx.restore();
+  };
+  ctx.save(); ctx.beginPath(); ctx.arc(CX, CY, RAYON_VUE, 0, Math.PI * 2); ctx.clip();
+  ctx.fillStyle = '#fbf8ef'; ctx.fillRect(0, 0, cvs.width, CY + 30);
+  ctx.fillStyle = '#4a5866'; ctx.font = 'italic 12px Arial'; ctx.textAlign = 'center';
+  ctx.fillText('Croquis de terrain', CX, 40);
+  if (type === 'chemin') {
+    ctx.fillStyle = '#7a9a55'; ctx.fillRect(0, 60, cvs.width, CY - 30);
+    ctx.fillStyle = '#a2845a'; ctx.fillRect(150, 60, 140, CY - 30);
+    ctx.fillStyle = '#1d2733'; ctx.font = '12px Arial'; ctx.fillText('chemin', CX, 85);
+    cote(150, 150, 290, 150, `largeur = ${txt(valeurs[nom])}`, true);
+    ctx.fillStyle = '#c41e1e'; ctx.fillText('0 du ruban', 150, 190);
+  } else if (type === 'facade') {
+    // Maison Nosiuol vue de dessus (8 m × 6 m), façade Est à droite
+    ctx.fillStyle = '#d8cdb5'; ctx.fillRect(150, 80, 120, 140);
+    ctx.strokeStyle = '#555'; ctx.lineWidth = 2; ctx.strokeRect(150, 80, 120, 140);
+    ctx.strokeStyle = '#e35d00'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(270, 80); ctx.lineTo(270, 220); ctx.stroke();
+    ctx.fillStyle = '#5b3b24'; ctx.fillRect(266, 140, 8, 20);
+    ctx.fillStyle = '#1d2733'; ctx.font = 'bold 13px Arial'; ctx.fillText('Maison', 210, 140); ctx.fillText('« Nosiuol »', 210, 158);
+    ctx.font = '11px Arial'; ctx.fillText('façade Est', 300, 70);
+    cote(300, 80, 300, 220, `${txt(valeurs[nom])}`, true);
+    ctx.fillStyle = '#1d2733'; ctx.fillText('N ↑', 120, 70);
+    ctx.fillStyle = '#c41e1e'; ctx.font = 'bold 11px Arial'; ctx.fillText('0 du ruban (angle Nord-Est)', 330, 232);
+  } else if (type === 'grange') {
+    // Grange à Flo vue de dessus (13 m × 8 m) et élévation de la façade Est (portail)
+    const g = valeurs, actif = n => n === nom;
+    ctx.fillStyle = '#c3cbd1'; ctx.fillRect(70, 95, 156, 96);
+    ctx.strokeStyle = '#555'; ctx.lineWidth = 2; ctx.strokeRect(70, 95, 156, 96);
+    ctx.fillStyle = '#5e4a36'; ctx.fillRect(222, 122, 8, 42);
+    ctx.fillStyle = '#1d2733'; ctx.font = 'bold 12px Arial'; ctx.fillText('Grange à Flo', 148, 145);
+    ctx.font = '11px Arial'; ctx.fillText('N ↑', 60, 75);
+    cote(70, 82, 226, 82, `N : ${txt(g['Façade Nord'])}`, actif('Façade Nord'));
+    cote(70, 204, 226, 204, `S : ${txt(g['Façade Sud'])}`, actif('Façade Sud'));
+    cote(57, 95, 57, 191, `O : ${txt(g['Façade Ouest'])}`, actif('Façade Ouest'));
+    cote(239, 95, 239, 191, `E : ${txt(g['Façade Est'])}`, actif('Façade Est'), -24);
+    // Élévation Est avec le portail
+    ctx.fillStyle = '#c3cbd1'; ctx.fillRect(285, 120, 96, 66); ctx.strokeRect(285, 120, 96, 66);
+    ctx.beginPath(); ctx.moveTo(281, 120); ctx.lineTo(333, 100); ctx.lineTo(385, 120); ctx.closePath(); ctx.fillStyle = '#5a666e'; ctx.fill();
+    ctx.fillStyle = '#5e4a36'; ctx.fillRect(312, 139, 42, 47);
+    ctx.fillStyle = '#1d2733'; ctx.font = '11px Arial'; ctx.fillText('Façade Est', 333, 93);
+    cote(312, 200, 354, 200, txt(g['Portail : largeur']), actif('Portail : largeur'));
+    cote(366, 139, 366, 186, txt(g['Portail : hauteur']), actif('Portail : hauteur'), -24);
+  }
+  ctx.restore();
+}
+
+// --- Lecture du ruban (moitié basse de la vue), sous le croquis ---
+function lectureRuban(vraie, quoi, dessinCroquis) {
+  const pxParCm = 12, centre = vraie + (Math.random() - 0.5) * 0.12, yR = CY + 95;
   consigne(`Lecture du décamètre : ${quoi}`);
   elInstPanneau.innerHTML = `
-    <p>Le zéro du ruban est tenu sur le premier bord. Lis la graduation en face du <b>trait noir</b> (second bord) : mètres et centimètres, millimètres estimés.</p>
-    <p><b>Distance (m) :</b> <input type="text" id="champRuban" placeholder="ex. 2,63" autocomplete="off"></p><p id="etatRuban"></p>
-    <button class="bouton" id="btnValider">Noter (Entrée)</button>`;
+    <p>Le <b>zéro du ruban</b> est tenu sur le premier bord (repère du croquis). Le ruban est tendu jusqu'au second bord :
+    lis la graduation en face du <b>trait noir</b> (mètres, centimètres, millimètres estimés).</p>
+    <p><b>Distance (m) :</b> <input type="text" id="champRuban" inputmode="decimal" placeholder="ex. 2,63" autocomplete="off"></p><p id="etatRuban"></p>
+    <button class="bouton" id="btnValider">Noter (Entrée ou R)</button>`;
   const xDe = v => CX + (v - centre) * 100 * pxParCm;
   dessinerFond('#6f8f5c');
+  dessinCroquis();
   ctx.save(); ctx.beginPath(); ctx.arc(CX, CY, RAYON_VUE, 0, Math.PI * 2); ctx.clip();
-  ctx.fillStyle = '#9b7b52'; ctx.fillRect(0, 0, xDe(vraie), cvs.height);     // côté mesuré (chemin ou mur)
-  ctx.fillStyle = '#f5d000'; ctx.fillRect(0, CY - 40, cvs.width, 80);        // ruban jaune
+  ctx.fillStyle = '#6f8f5c'; ctx.fillRect(0, CY + 30, cvs.width, cvs.height);
+  ctx.fillStyle = '#9b7b52'; ctx.fillRect(0, CY + 30, xDe(vraie), cvs.height);   // côté mesuré (mur ou chemin)
+  ctx.fillStyle = '#f5d000'; ctx.fillRect(0, yR - 30, cvs.width, 60);              // ruban jaune
   for (let c = Math.floor((centre - 0.2) * 100); c <= Math.ceil((centre + 0.2) * 100); c++) {
-    const x = xDe(c / 100), long = c % 10 === 0 ? 34 : c % 5 === 0 ? 24 : 14;
+    const x = xDe(c / 100), long = c % 10 === 0 ? 28 : c % 5 === 0 ? 20 : 12;
     ctx.fillStyle = c % 100 === 0 ? '#c41e1e' : '#111';
-    ctx.fillRect(x - 1, CY - 40, 2, long);
-    for (let m = 1; m < 10; m++) { ctx.fillRect(xDe(c / 100 + m / 1000) - 0.5, CY - 40, 1, 6); }   // millimètres
-    if (c % 10 === 0) { ctx.font = 'bold 18px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(String(c), x, CY - 2); }
+    ctx.fillRect(x - 1, yR - 30, 2, long);
+    for (let m = 1; m < 10; m++) ctx.fillRect(xDe(c / 100 + m / 1000) - 0.5, yR - 30, 1, 5);   // millimètres
+    if (c % 10 === 0) { ctx.font = 'bold 16px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(String(c), x, yR); }
   }
-  ctx.fillStyle = '#111'; ctx.fillRect(xDe(vraie) - 2, CY - 120, 4, 240);   // second bord
+  ctx.fillStyle = '#111'; ctx.fillRect(xDe(vraie) - 2, CY + 30, 4, 140);   // second bord
+  ctx.fillStyle = '#fff'; ctx.font = '11px Arial'; ctx.textAlign = 'center'; ctx.fillText('zoom sur le ruban, au second bord (graduations en cm)', CX, CY + 45);
   ctx.restore();
   return etape({
     debut: brancherValidation,
@@ -2905,31 +3796,43 @@ function lectureRuban(vraie, quoi) {
   });
 }
 
+// --- Mesure d'une distance courte (missions bonus et grange à Flo) ---
 function mesureDistance(point) {
   const vraie = point.objet.largeur ?? point.objet.longueur;
   const quoi = point.nom[0].toLowerCase() + point.nom.slice(1);   // garde la majuscule du nom propre
-  ouvrirInstrument(point.nom);
+  const type = point.objet.croquis, estGrange = point.mission === 10;
+  const stock = estGrange ? RESULTATS.grange : RESULTATS.distances;
+  const valeursCroquis = () => Object.fromEntries(Object.entries(stock).map(([n, r]) => [n, r.mesuree]));
+  ouvrirInstrument(estGrange ? `Grange à Flo — ${point.nom}` : point.nom);
   executer(async () => {
     let mesuree;
     if (sac.has('telemetre')) {
       mesuree = Math.round((vraie + gauss() * 0.0015) * 1000) / 1000;
       consigne(`Télémètre laser : ${quoi}`);
       dessinerFond('#222');
-      ctx.fillStyle = '#b9f5c3'; ctx.font = 'bold 54px Consolas, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(`${fr(mesuree, 3)} m`, CX, CY);
-      elInstPanneau.innerHTML = '<p>Le télémètre est posé contre le premier bord et vise le second : il affiche directement la distance. Note-la dans ton carnet !</p><button class="bouton" id="btnValider">Noter (Entrée)</button>';
+      dessinerCroquisDistance(type, point.nom, valeursCroquis());
+      ctx.save(); ctx.beginPath(); ctx.arc(CX, CY, RAYON_VUE, 0, Math.PI * 2); ctx.clip();
+      ctx.fillStyle = '#c0392b'; ctx.fillRect(CX - 110, CY + 45, 220, 110);
+      ctx.fillStyle = '#1d2a20'; ctx.fillRect(CX - 95, CY + 58, 190, 60);
+      ctx.fillStyle = '#b9f5c3'; ctx.font = 'bold 38px Consolas, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(`${fr(mesuree, 3)} m`, CX, CY + 88);
+      ctx.fillStyle = '#fff'; ctx.font = '11px Arial'; ctx.fillText('écran du télémètre', CX, CY + 138);
+      ctx.restore();
+      elInstPanneau.innerHTML = '<p>Le télémètre est appuyé sur le premier bord (repère du croquis) et vise le second : il affiche directement la distance. Note-la dans ton carnet !</p><button class="bouton" id="btnValider">Noter (R)</button>';
       await etape({ debut: brancherValidation, valider() { this.resolve(); } });
     } else {
-      mesuree = await lectureRuban(vraie, quoi);
+      mesuree = await lectureRuban(vraie, quoi, () => dessinerCroquisDistance(type, point.nom, valeursCroquis()));
     }
     const ecart = mesuree - vraie;
-    RESULTATS.distances[point.nom] = { mesuree, vraie, ecart, instrument: sac.has('telemetre') ? 'télémètre' : 'décamètre' };
+    stock[point.nom] = { mesuree, vraie, ecart, instrument: sac.has('telemetre') ? 'télémètre' : 'décamètre' };
     marquerFait(point);
-    let html = `<p>${point.nom} : <b>${fr(mesuree, 3)} m</b></p>`;
-    if (niveau.retourImmediat) html += `<p>Valeur vraie : ${fr(vraie, 3)} m · écart ${ecartTexte(ecart)}
-      ${Math.abs(ecart) <= niveau.distance ? '<span class="ok">✔ dans la tolérance</span>' : '<span class="ko">✘ hors tolérance</span>'}</p>`;
-    if (missionTerminee(4)) html += '<p class="ok">Mission bonus terminée !</p>';
-    await ecranResultat(`${point.nom} : mesure enregistrée`, html);
+    // Le croquis se complète avec la nouvelle cote
+    dessinerFond('#fbf8ef');
+    dessinerCroquisDistance(type, point.nom, valeursCroquis());
+    let html = `<p>${point.nom} : <b>${fr(mesuree, 3)} m</b> (reportée sur le croquis)</p>`;
+    if (niveau.retourImmediat) html += `<p>Valeur vraie : ${fr(vraie, 3)} m · écart ${ecartTexte(ecart)} ${verdict(ecart, niveau.distance)}</p>`;
+    if (missionTerminee(point.mission)) html += `<p class="ok">Mission ${MISSION[point.mission].libelle} terminée !</p>`;
+    await ecranResultat(`${point.nom} : mesure enregistrée`, html, true);
   });
 }
 
@@ -2952,8 +3855,12 @@ function tenterMesure(point) {
   if (point.mission === 2) mesureGNSS(point);
   else if (point.mission === 3) mesureChateau();
   else if (point.mission === 6) mesureEglise();
-  else if (point.mission === 7 || point.mission === 8) mesureTraversee(point);
+  else if (point.mission === 7) mesureTraversee(point);
+  else if (point.mission === 8) mesureRiviere(point);
   else if (point.mission === 9) mesureCarriere();
+  else if (point.mission === 11) mesurePont();
+  else if (point.mission === 12) { if (point.role === 'depart') brancherGenerateur(point); else terminerDetection(point); }
+  else if (point.mission === 13) mesureDrone();
   else mesureDistance(point);
 }
 
@@ -2961,7 +3868,7 @@ function tenterMesure(point) {
 function pointMissionProche(inclureChateau) {
   let meilleur = null;
   for (const p of POINTS_MISSION) {
-    if (p.fait) continue;
+    if (p.fait || !missionActive(p.mission)) continue;
     const d = Math.hypot(joueur.x - p.x, joueur.z - p.z);
     if (p.distMax !== undefined) {
       if (inclureChateau && d <= p.distMax && (!meilleur || d < meilleur.d)) meilleur = { point: p, d, possible: d >= p.distMin };
@@ -2973,7 +3880,7 @@ function pointMissionProche(inclureChateau) {
 // --- Ordre de mission (touche M) ---
 let ordreOuvert = false;
 function majOrdre() {
-  document.getElementById('listeMissions').innerHTML = MISSIONS.map(m => {
+  document.getElementById('listeMissions').innerHTML = MISSIONS.filter(m => missionActive(m.id)).map(m => {
     const points = POINTS_MISSION.filter(p => p.mission === m.id);
     const faits = points.filter(p => p.fait).length;
     const materiel = m.requis ? nomsMateriel(m.requis) : 'décamètre ou télémètre laser';
@@ -3010,10 +3917,11 @@ function majBoussole() {
   };
   CARDINAUX.forEach(([, g], i) => placer(elCardinaux[i], g));
 
+  if (estInterieur(joueur.x)) { elMarque.style.display = 'none'; elCibleTexte.textContent = 'Au cabinet : sors par la porte à l\'Est pour rejoindre le chantier'; return; }
   // Point le plus proche non encore mesuré
   let cible = null, dMin = Infinity;
   for (const p of POINTS_MISSION) {
-    if (p.fait) continue;
+    if (p.fait || !missionActive(p.mission)) continue;
     const d = Math.hypot(p.x - joueur.x, p.z - joueur.z);
     if (d < dMin) { dMin = d; cible = p; }
   }
@@ -3082,11 +3990,22 @@ function majCarnet() {
   }
 
   // Étang et rivière
-  for (const id of [7, 8]) {
-    const r = RESULTATS.traversees[id];
-    if (!r) continue;
-    parties.push(titreMission(id) + `<table>${enteteTab(['Distance', 'Instrument', 'Mesure (m)', 'Écart'])}`
+  {
+    const r = RESULTATS.traversees[7];
+    if (r) parties.push(titreMission(7) + `<table>${enteteTab(['Distance', 'Instrument', 'Mesure (m)', 'Écart'])}`
       + ligneTab([`${r.de} – ${r.vers}`, r.instrument, fr(r.mesuree, 3), `${ecartTexte(r.ecart)} ${verdict(r.ecart, niveau.distance)}`]) + '</table>');
+  }
+  // Rivière : point inaccessible en 2 stations
+  if (RESULTATS.riviere.C1 || RESULTATS.riviere.C2) {
+    const R = RESULTATS.riviere, c = calculerRiviere();
+    let h = titreMission(8) + `<table>${enteteTab(['Station', 'Hz base', 'Hz jalon D', 'Angle', 'Dh base'])}`;
+    for (const [nom, s] of [['C1', R.C1], ['C2', R.C2]]) if (s) h += ligneTab([nom, fr(s.HzBase, 4), fr(s.HzD, 4), `${fr(s.angle, 4)} gon`, `${fr(s.Dh, 3)} m`]);
+    h += '</table>';
+    if (c.largeur !== undefined) {
+      const retenue = R.largeurEleve ?? c.largeur;
+      h += `<p>γ = ${fr(c.gamma, 4)} gon · C1D = ${fr(c.C1D, 3)} m · largeur = <b>${fr(retenue, 3)} m</b> · écart ${ecartTexte(retenue - MONDE.largeurRiviere)} ${verdict(retenue - MONDE.largeurRiviere, niveau.hauteur)}</p>`;
+    } else h += '<p>En cours : il manque une station.</p>';
+    parties.push(h);
   }
 
   // Carrière
@@ -3094,6 +4013,35 @@ function majCarnet() {
     const r = RESULTATS.carriere, retenue = r.profondeurEleve ?? r.profondeurMesuree;
     parties.push(titreMission(9) + `<table>${enteteTab(['Dh₁ (K1)', 'V₁ (gon)', 'Dh₂ (K2)', 'V₂ (gon)', 'Profondeur', 'Écart'])}`
       + ligneTab([fr(r.Dh1, 3), fr(r.V1, 4), fr(r.Dh2, 3), fr(r.V2, 4), fr(retenue, 3), `${ecartTexte(retenue - r.vraie)} ${verdict(retenue - r.vraie, niveau.hauteur)}`]) + '</table>');
+  }
+
+  // Réseau électrique
+  if (RESULTATS.reseau) {
+    const r = RESULTATS.reseau;
+    parties.push(titreMission(12) + `<p>Tracé coffret → poste ≈ ${fr(r.longueur, 0)} m · ${r.nbMarques} marques · révélé à ${Math.round(r.couverture * 100)} % · écart moyen des marques ${ecartTexte(r.ecartMoyen).replace('+', '')} ${verdict(r.ecartMoyen, niveau.distance * 10)}</p>`);
+  } else if (detection.marques.length) parties.push(titreMission(12) + `<p>En cours : ${detection.marques.length} marques, tracé révélé à ${Math.round(couvertureReseau() * 100)} %.</p>`);
+  // Drone
+  if (RESULTATS.drone) {
+    const r = RESULTATS.drone;
+    parties.push(titreMission(13) + `<table>${enteteTab(['Hauteur', 'Rec. long.', 'Rec. lat.', 'GSD', 'Photos', 'Durée', 'Critères'])}`
+      + ligneTab([`${r.H} m`, `${r.long} %`, `${r.lat} %`, `${fr(r.gsd, 2)} cm`, r.photos, `${fr(r.minutes, 1)} min`, `${r.reussis} / 5`]) + '</table>');
+  }
+  // Pont à Mousson
+  if (RESULTATS.pont) {
+    const r = RESULTATS.pont, P = MONDE.pont, L = r.longueurEleve ?? r.longueurMesuree, H = r.hauteurEleve ?? r.hauteurMesuree;
+    parties.push(titreMission(11) + `<table>${enteteTab(['Visée', 'Dh (m)', 'Hz / V (gon)'])}`
+      + ligneTab(['Prisme Ouest', fr(r.Dh1, 3), `Hz ${fr(r.Hz1, 4)}`]) + ligneTab(['Prisme Est', fr(r.Dh2, 3), `Hz ${fr(r.Hz2, 4)}`])
+      + ligneTab(['Pile (eau)', fr(r.DhPile, 3), `V ${fr(r.V1, 4)}`]) + ligneTab(['Dessus du tablier', '—', `V ${fr(r.V2, 4)}`]) + '</table>'
+      + `<p>Longueur = <b>${fr(L, 3)} m</b> (écart ${ecartTexte(L - P.longueur)} ${verdict(L - P.longueur, niveau.distance)}) · Hauteur = <b>${fr(H, 3)} m</b> (écart ${ecartTexte(H - P.hauteurEau)} ${verdict(H - P.hauteurEau, niveau.hauteur)})</p>`);
+  }
+
+  // Grange à Flo : contour et portail
+  const gr = Object.entries(RESULTATS.grange);
+  if (gr.length) {
+    const fini = missionTerminee(10);
+    parties.push(titreMission(10) + `<table>${enteteTab(['Mesure', 'Instrument', 'Valeur (m)', ...(fini ? ['Écart'] : [])])}`
+      + gr.map(([nom, r]) => ligneTab([nom, r.instrument, fr(r.mesuree, 3), ...(fini ? [`${ecartTexte(r.ecart)} ${verdict(r.ecart, niveau.distance)}`] : [])])).join('') + '</table>'
+      + (fini ? '' : `<p>En cours : ${gr.length} / 6 mesures.</p>`));
   }
 
   // Bonus : distances courtes
@@ -3125,7 +4073,8 @@ document.getElementById('boutonImprimerCarnet').addEventListener('click', () => 
 // =====================================================================
 // Barème par mission : précision 10 + matériel 4 + méthode 4 + temps 2 = 20
 let bilanOuvert = false, debutPartie = 0, toutFiniAnnonce = false;
-const MISSIONS_PRINCIPALES = MISSIONS.filter(m => m.id !== 4).map(m => m.id);
+// Missions principales de la journée (recalculées au démarrage selon le choix fait à l'accueil)
+let MISSIONS_PRINCIPALES = MISSIONS.filter(m => m.id !== 4).map(m => m.id);
 const missionFinie = id => (id === 1 || id === 5) ? cheminementTermine(RESULTATS.cheminements[id]) : missionTerminee(id);
 // Précision : rapport écart / tolérance → points sur 10
 const notePrecision = r => r <= 0.5 ? 10 : r <= 1 ? 8 : r <= 2 ? 5 : r <= 3 ? 2 : 0;
@@ -3139,7 +4088,8 @@ function noteTemps(nbFaites) {
 }
 
 function evaluerMission(id, pointsTemps) {
-  const res = { id, faite: missionFinie(id), precision: 0, materiel: 0, methode: 0, temps: 0, total: 0, remarques: [] };
+  // Une mission compte seulement si elle est terminée ET si ses données ont été vidées sur l'ordinateur du cabinet
+  const res = { id, faite: missionFinie(id) && missionsVidees.has(id), aVider: missionFinie(id) && !missionsVidees.has(id), precision: 0, materiel: 0, methode: 0, temps: 0, total: 0, remarques: [] };
   if (!res.faite) return res;
   const essais = POINTS_MISSION.filter(p => p.mission === id).reduce((s, p) => s + p.essaisMaterielInadapte, 0);
   res.materiel = Math.max(0, 4 - essais);
@@ -3167,12 +4117,34 @@ function evaluerMission(id, pointsTemps) {
     res.precision = notePrecision(Math.abs((eleve ?? mesure) - r.vraie) / niveau.hauteur);
     if (eleve !== undefined && Math.abs(eleve - mesure) > 0.01) retirer(2, 'erreur dans le calcul');
     if (calageLimite(r.calage)) retirer(1, 'calage à la limite du cercle');
-  } else if (id === 7 || id === 8) {
+  } else if (id === 7) {
     const r = RESULTATS.traversees[id];
     res.precision = notePrecision(Math.abs(r.ecart) / niveau.distance);
     if (calageLimite(r.calage)) retirer(1, 'calage à la limite du cercle');
-  } else if (id === 4) {
-    res.precision = Math.round(moyenne(Object.values(RESULTATS.distances).map(r => notePrecision(Math.abs(r.ecart) / niveau.distance))));
+  } else if (id === 8) {
+    const R = RESULTATS.riviere, c = calculerRiviere(), retenue = R.largeurEleve ?? c.largeur;
+    res.precision = notePrecision(Math.abs(retenue - MONDE.largeurRiviere) / niveau.hauteur);
+    if (R.largeurEleve !== undefined && Math.abs(R.largeurEleve - c.largeur) > 0.01) retirer(2, 'erreur dans le calcul du triangle');
+    if ([R.C1, R.C2].some(s => s && calageLimite(s.calage))) retirer(1, 'calage à la limite du cercle');
+  } else if (id === 12) {
+    const r = RESULTATS.reseau;
+    res.precision = notePrecision(r.ecartMoyen / (niveau.distance * 10));
+    if (r.couverture < 0.9) retirer(1, `tracé révélé à ${Math.round(r.couverture * 100)} % seulement`);
+    if (r.nbMarques < r.longueur / 5) retirer(1, 'trop peu de marques (au moins une tous les 5 m)');
+  } else if (id === 13) {
+    const r = RESULTATS.drone;
+    res.precision = r.reussis * 2;   // 5 critères × 2 points
+    if (!r.ok_hauteur) retirer(2, 'vol au-dessus de 120 m : interdit par la réglementation');
+    if (!r.ok_batterie) retirer(1, 'batterie vide avant la fin du vol');
+  } else if (id === 11) {
+    const r = RESULTATS.pont, P = MONDE.pont;
+    const L = r.longueurEleve ?? r.longueurMesuree, H = r.hauteurEleve ?? r.hauteurMesuree;
+    res.precision = Math.round(moyenne([notePrecision(Math.abs(L - P.longueur) / niveau.distance), notePrecision(Math.abs(H - P.hauteurEau) / niveau.hauteur)]));
+    if (r.longueurEleve !== undefined && (Math.abs(r.longueurEleve - r.longueurMesuree) > 0.01 || Math.abs(r.hauteurEleve - r.hauteurMesuree) > 0.01)) retirer(2, 'erreur dans les calculs');
+    if (calageLimite(r.calage)) retirer(1, 'calage à la limite du cercle');
+  } else if (id === 4 || id === 10) {
+    const liste = Object.values(id === 4 ? RESULTATS.distances : RESULTATS.grange);
+    res.precision = Math.round(moyenne(liste.map(r => notePrecision(Math.abs(r.ecart) / niveau.distance))));
   }
   res.methode = Math.max(0, methode);
   res.temps = pointsTemps;
@@ -3186,18 +4158,18 @@ const CONSEILS = {
   gnss: 'GNSS : verticalise bien la canne et attends la solution « Fixe ». Sous les arbres, le ciel est masqué : la solution reste flottante.',
   station: 'Station totale : pointe en lunette, très précisément, la base puis le sommet. Règle ta calculatrice en grades !',
   distance: 'Distances : vise exactement le centre du prisme, ou lis le ruban avec soin (millimètres estimés).',
-  materiel: 'Matériel : relis l\'ordre de mission avant de partir et prépare le bon matériel au camion.',
+  materiel: 'Matériel : relis l\'ordre de mission avant de partir et prépare le bon matériel au cabinet.',
   methode: 'Méthode : portées équilibrées (niveau à mi-distance) et bulle bien centrée, pas au bord du cercle.',
 };
 
 function majBilan() {
   const faites = MISSIONS_PRINCIPALES.filter(missionFinie);
   const temps = noteTemps(faites.length);
-  const evals = [...MISSIONS_PRINCIPALES, 4].map(id => evaluerMission(id, temps.points));
+  const evals = [...MISSIONS_PRINCIPALES, ...(missionActive(4) ? [4] : [])].map(id => evaluerMission(id, temps.points));
   const principales = evals.filter(e => e.id !== 4 && e.faite);
-  const bonus = evals.find(e => e.id === 4);
+  const bonus = evals.find(e => e.id === 4) || { faite: false, precision: 0 };
   // Note de la journée : moyenne sur TOUTES les missions principales (une mission non faite compte 0)
-  let note = principales.reduce((s, e) => s + e.total, 0) / MISSIONS_PRINCIPALES.length;
+  let note = principales.reduce((s, e) => s + e.total, 0) / Math.max(1, MISSIONS_PRINCIPALES.length);
   if (bonus.faite && bonus.precision >= 8) note = Math.min(20, note + 1);   // +1 point pour un bonus précis
   note = Math.round(note * 10) / 10;
   const moyenneRealisees = principales.length ? Math.round(moyenne(principales.map(e => e.total)) * 10) / 10 : 0;
@@ -3221,11 +4193,14 @@ function majBilan() {
     if (e.materiel < 4) conseils.add(CONSEILS.materiel);
     if (e.methode < 3 && e.id !== 2) conseils.add(CONSEILS.methode);
   }
-  if (principales.length < MISSIONS_PRINCIPALES.length) conseils.add(`Il reste ${MISSIONS_PRINCIPALES.length - principales.length} mission${MISSIONS_PRINCIPALES.length - principales.length > 1 ? 's' : ''} à réaliser : retourne sur le terrain !`);
+  const enAttente = evals.filter(e => e.aVider).length;
+  if (enAttente) conseils.add(`${enAttente} mission${enAttente > 1 ? 's sont terminées' : ' est terminée'} mais pas encore traitée${enAttente > 1 ? 's' : ''} : vide tes données sur l'ordinateur du cabinet pour qu'elle${enAttente > 1 ? 's comptent' : ' compte'} dans la note.`);
+  const restantes = MISSIONS_PRINCIPALES.length - principales.length - evals.filter(e => e.aVider && e.id !== 4).length;
+  if (restantes > 0) conseils.add(`Il reste ${restantes} mission${restantes > 1 ? 's' : ''} à réaliser : retourne sur le terrain !`);
 
   const lignes = evals.map(e => {
     const m = MISSION[e.id], titre = `${m.libelle === 'bonus' ? 'Bonus' : m.libelle}. ${m.titre.replace('Bonus : ', '')}`;
-    if (!e.faite) return `<tr class="nonFaite"><td>${titre}</td><td colspan="5">non réalisée</td><td></td></tr>`;
+    if (!e.faite) return `<tr class="nonFaite"><td>${titre}</td><td colspan="5">${e.aVider ? 'terminée : données à vider sur l\'ordinateur du cabinet' : 'non réalisée'}</td><td></td></tr>`;
     return `<tr><td>${titre}</td><td>${e.precision}/10</td><td>${e.materiel}/4</td><td>${e.methode}/4</td><td>${e.temps}/2</td><td><b>${e.total}/20</b></td><td style="text-align:left">${e.remarques.join(' · ')}</td></tr>`;
   }).join('');
 
@@ -3236,7 +4211,7 @@ function majBilan() {
         <p style="font-size:12px;color:#8a96a2">Lycée Pierre Mendès France (PMF) · section géomètre-topographe</p>
         <p><b>Niveau ${niveau.nom}</b> · ${principales.length} / ${MISSIONS_PRINCIPALES.length} missions réalisées${bonus.faite ? ' + bonus' : ''}
           ${principales.length ? ` · moyenne des missions réalisées : ${fr(moyenneRealisees, 1)}/20` : ''}</p>
-        <p>Durée : ${fr(temps.minutes, 0)} min · retours au camion pour changer de matériel : ${statsCamion.retours}</p>
+        <p>Durée : ${fr(temps.minutes, 0)} min · retours au cabinet pour changer de matériel : ${statsCamion.retours}</p>
         <p>${nouveauRecord ? '🏆 Nouveau meilleur score sur cet ordinateur !' : meilleur ? `Meilleur score à ce niveau : ${fr(meilleur.note, 1)}/20` : ''}</p>
       </div>
     </div>
@@ -3261,7 +4236,11 @@ function fermerBilan() { bilanOuvert = false; document.getElementById('bilan').c
 document.getElementById('boutonFermerBilan').addEventListener('click', fermerBilan);
 document.getElementById('boutonImprimerBilan').addEventListener('click', () => imprimer('bilan'));
 document.getElementById('boutonNouvellePartie').addEventListener('click', () => {
-  if (confirm('Commencer une nouvelle partie ? Les mesures de cette partie seront perdues (pense à imprimer ton bilan).')) location.reload();
+  if (confirm('Commencer une nouvelle partie ? Les mesures de cette partie seront perdues (pense à imprimer ton bilan).')) {
+    enJeu = false;   // empêche la sauvegarde automatique en quittant
+    try { localStorage.removeItem('geometreTopo.sauvegarde'); } catch (e) { /* stockage indisponible */ }
+    location.reload();
+  }
 });
 document.getElementById('boutonBilanDepuisOrdre').addEventListener('click', ouvrirBilan);
 
@@ -3269,7 +4248,7 @@ document.getElementById('boutonBilanDepuisOrdre').addEventListener('click', ouvr
 function verifierFinDeJournee() {
   if (!toutFiniAnnonce && MISSIONS_PRINCIPALES.every(missionFinie)) {
     toutFiniAnnonce = true;
-    afficherMessage('Bravo, toutes les missions sont terminées ! Appuie sur B pour voir ton bilan.', 8000);
+    afficherMessage('Bravo, toutes les missions sont terminées ! Rentre au cabinet vider tes données sur l\'ordinateur, puis appuie sur B pour ton bilan.', 9000);
   }
 }
 
@@ -3278,6 +4257,19 @@ function verifierFinDeJournee() {
 // =====================================================================
 // Fond dessiné une seule fois : 1 pixel = 1 m, Nord en haut
 const elMini = document.getElementById('miniCarte'), mctx = elMini.getContext('2d');
+// Clic sur la mini-carte : le géomètre s'y rend tout seul (en courant)
+elMini.style.cursor = 'crosshair';
+elMini.title = 'Clique pour t\'y rendre';
+elMini.addEventListener('click', e => {
+  if (!enJeu || instrumentOuvert || camionOuvert) return;
+  if (voiture.conduite) { afficherMessage('Tu conduis : utilise Z Q S D.', 1500); return; }
+  if (estInterieur(joueur.x)) { afficherMessage('Sors d\'abord du cabinet (porte à l\'Est).', 2000); return; }
+  const r = elMini.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width * 200 - 100, z = (e.clientY - r.top) / r.height * 200 - 100;
+  joueur.destination = { x: clamp(x, -LIMITE_JOUEUR, LIMITE_JOUEUR), z: clamp(z, -LIMITE_JOUEUR, LIMITE_JOUEUR) };
+  joueur.bloque = 0;
+  afficherMessage('En route ! (Z Q S D pour reprendre la main)', 1800);
+});
 const fondMini = document.createElement('canvas');
 fondMini.width = fondMini.height = 200;
 {
@@ -3310,13 +4302,25 @@ function majMiniCarte() {
   { const [u, v] = vers(MONDE.camion.x, MONDE.camion.z); mctx.fillStyle = '#fff'; mctx.fillRect(u - 3, v - 2, 6, 4); }
   // Points de mission : couleur de la mission, vert une fois mesurés
   for (const p of POINTS_MISSION) {
+    if (!missionActive(p.mission)) continue;
     const [u, v] = vers(p.x, p.z);
     mctx.fillStyle = p.fait ? '#2ecc71' : MISSION[p.mission].couleur;
     mctx.beginPath(); mctx.arc(u, v, p.fait ? 2 : 3, 0, Math.PI * 2); mctx.fill();
     if (!p.fait) { mctx.strokeStyle = '#fff'; mctx.lineWidth = 1; mctx.stroke(); }
   }
-  // Géomètre : flèche orientée dans sa direction de marche
-  const [u, v] = vers(joueur.x, joueur.z), a = joueur.angle;
+  // Destination choisie par clic
+  if (joueur.destination) {
+    const [u, v] = vers(joueur.destination.x, joueur.destination.z);
+    mctx.strokeStyle = '#ff6a00'; mctx.lineWidth = 2;
+    mctx.beginPath(); mctx.moveTo(u - 5, v - 5); mctx.lineTo(u + 5, v + 5); mctx.moveTo(u + 5, v - 5); mctx.lineTo(u - 5, v + 5); mctx.stroke();
+    mctx.setLineDash([3, 3]); mctx.lineWidth = 1;
+    mctx.beginPath(); mctx.moveTo(...vers(joueur.x, joueur.z)); mctx.lineTo(u, v); mctx.stroke(); mctx.setLineDash([]);
+  }
+  // Cabinet (bâtiment gris foncé)
+  { const C = MONDE.cabinet, [u, v] = vers(C.x - C.dx, C.z - C.dz); mctx.fillStyle = '#4a5058'; mctx.fillRect(u, v, C.dx * 2, C.dz * 2); }
+  // Géomètre : flèche orientée dans sa direction de marche (au cabinet quand il est à l'intérieur)
+  const pos = estInterieur(joueur.x) ? MONDE.cabinet : joueur;
+  const [u, v] = vers(pos.x, pos.z), a = estInterieur(joueur.x) ? 0 : joueur.angle;
   mctx.save(); mctx.translate(u, v); mctx.rotate(-a + Math.PI);
   mctx.fillStyle = '#ff6a00'; mctx.strokeStyle = '#000'; mctx.lineWidth = 1;
   mctx.beginPath(); mctx.moveTo(0, -7); mctx.lineTo(5, 5); mctx.lineTo(0, 2); mctx.lineTo(-5, 5); mctx.closePath(); mctx.fill(); mctx.stroke();
@@ -3346,10 +4350,18 @@ addEventListener('keydown', e => {
   // Mini-jeu de mesure ouvert : Échap abandonne, Entrée valide, les autres touches pilotent l'instrument
   if (instrumentOuvert) {
     if (e.code === 'Escape') { abandonner(); return; }
-    // Dans le champ de saisie, seules les flèches et Maj pilotent l'instrument (Entrée est gérée par le champ)
-    if (e.target.tagName === 'INPUT' && !(e.code.startsWith('Arrow') || e.code.startsWith('Shift'))) return;
-    if (e.code === 'Enter' || e.code === 'NumpadEnter') { e.preventDefault(); if (!e.repeat && etapeCourante && etapeCourante.valider) etapeCourante.valider(); return; }
-    instClavier.add(e.code);
+    // Z Q S D (position physique AZERTY) pilotent l'instrument comme les flèches ; R = « Relever » (valider)
+    const code = CODES_INSTRUMENT[e.code] || e.code;
+    const pilotage = code.startsWith('Arrow') || code.startsWith('Shift') || e.code === 'KeyR';
+    // Dans le champ de saisie (nombres), seules les touches de pilotage sont interceptées
+    if (e.target.tagName === 'INPUT' && !pilotage) return;
+    if (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'KeyR') {
+      e.preventDefault();
+      if (!e.repeat && etapeCourante && etapeCourante.valider) etapeCourante.valider();
+      return;
+    }
+    if (e.target.tagName === 'INPUT') e.preventDefault();   // la lettre ne s'écrit pas dans la lecture
+    instClavier.add(code);
     if (!e.repeat && etapeCourante && etapeCourante.touche) etapeCourante.touche(e.code);
     if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
     return;
@@ -3367,6 +4379,13 @@ addEventListener('keydown', e => {
     if ((lettre === 'm' || lettre === 'e' || e.code === 'Escape') && !e.repeat) fermerOrdre();
     return;
   }
+  // Ordinateur du cabinet : E vide les données (ou referme), Échap referme
+  if (ordinateurOuvert) {
+    if (e.repeat) return;
+    if (lettre === 'e') { const b = document.getElementById('boutonVider'); if (b && !b.disabled) viderDonnees(); else fermerOrdinateur(); }
+    else if (e.code === 'Escape') fermerOrdinateur();
+    return;
+  }
   // Bilan ouvert : B ou Échap le referment
   if (bilanOuvert) {
     if ((lettre === 'b' || e.code === 'Escape') && !e.repeat) fermerBilan();
@@ -3380,13 +4399,19 @@ addEventListener('keydown', e => {
   }
   if (lettre === 'c' && !e.repeat) { ouvrirCarnet(); return; }
   if (lettre === 'm' && !e.repeat) { ouvrirOrdre(); return; }
-  if (lettre === 't' && !e.repeat) { installerNiveau(); return; }
+  if (lettre === 't' && !e.repeat) {
+    if (voiture.conduite) afficherMessage('Descends d\'abord de la voiture (E).');
+    else if (estInterieur(joueur.x)) afficherMessage('On ne fait pas de nivellement dans le cabinet !');
+    else installerNiveau();
+    return;
+  }
   touches.add(e.code);
   if (lettre === 'h' && !e.repeat) document.getElementById('aide').classList.toggle('cache');
+  if (lettre === 'r' && !e.repeat && detection.active && !voiture.conduite) marquerReseau();   // marquage du réseau détecté
   if (lettre === 'e' && !e.repeat) interagir();
   if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
 });
-addEventListener('keyup', e => { touches.delete(e.code); instClavier.delete(e.code); });
+addEventListener('keyup', e => { touches.delete(e.code); instClavier.delete(CODES_INSTRUMENT[e.code] || e.code); });
 addEventListener('blur', () => { touches.clear(); instClavier.clear(); });
 // e.code désigne la position physique de la touche : KeyW = « Z » sur AZERTY, « W » sur QWERTY.
 const appuye = (...codes) => codes.some(c => touches.has(c));
@@ -3422,14 +4447,18 @@ function afficherMessage(texte, duree = 2500) {
 
 // Zones d'information autour des lieux remarquables
 const ZONES = [
-  { lieu: MONDE.camion, rayon: 6.5, texte: '<kbd>E</kbd> Ouvrir le camion', action: () => ouvrirCamion() },
+  { lieu: MONDE.camion, rayon: 5, texte: '<kbd>E</kbd> Monter dans la voiture', action: () => monterVoiture() },
+  { lieu: MONDE.cabinet.porte, rayon: 2.6, texte: '<kbd>E</kbd> Entrer dans le cabinet (matériel, ordinateur)', action: () => entrerCabinet() },
+  { lieu: MONDE.interieur.etageres, rayon: 2.8, texte: '<kbd>E</kbd> Prendre le matériel sur les étagères', action: () => ouvrirCamion() },
+  { lieu: MONDE.interieur.ordinateur, rayon: 1.9, texte: '<kbd>E</kbd> Vider les données sur l\'ordinateur', action: () => ouvrirOrdinateur() },
+  { lieu: MONDE.interieur.sortie, rayon: 1.9, texte: '<kbd>E</kbd> Sortir du cabinet', action: () => sortirCabinet() },
   { lieu: MONDE.repere, rayon: 3, texte: () => `Repère de nivellement IGN — altitude ${fr(MONDE.repere.altitude, 3)} m (NGF-IGN69)` },
   ...MONDE.reperesEncadrement.map(r => ({ lieu: r, rayon: 2.5, texte: `Repère de nivellement ${r.nom} — altitude ${fr(r.altitude, 3)} m (NGF-IGN69)` })),
   { lieu: MONDE.batiments[0], rayon: 7, texte: 'Maison « Nosiuol »' },
   { lieu: MONDE.batiments[1], rayon: 9, texte: 'Maison « Llere »' },
   { lieu: MONDE.batiments[2], rayon: 10, texte: 'La grange à Flo' },
   { lieu: { x: MONDE.eglise.x - 2, z: MONDE.eglise.z }, rayon: 13, texte: 'Église — la croix du clocher est un point remarquable, visible de loin' },
-  { lieu: { x: (MONDE.pont.xOuest + MONDE.pont.xEst) / 2, z: MONDE.pont.z }, rayon: 10, texte: 'Pont sur la rivière — sa longueur sera à mesurer' },
+  { lieu: { x: (MONDE.pont.xOuest + MONDE.pont.xEst) / 2, z: MONDE.pont.z }, rayon: 10, texte: 'Le Pont à Mousson (mission : longueur et hauteur, station sur S30)' },
   { lieu: MONDE.carriere, rayon: MONDE.carriere.rayons[0] + 4, texte: 'Carrière — sa profondeur sera à mesurer' },
   { lieu: MONDE.etang, rayon: MONDE.etang.rayon + 5, texte: 'La mare à Pépère' },
 ];
@@ -3444,8 +4473,15 @@ function majZones() {
       ? { texte: `<kbd>E</kbd> Mesurer : ${libelle}`, action: () => tenterMesure(point) }
       : { texte: `${libelle} : trop près ! Recule entre ${point.distMin} et ${point.distMax} m pour viser le sommet.` };
   };
-  // Rappel du cheminement quand le géomètre porte le matériel de nivellement
-  const chem = cheminementActif();
+  // Au volant : seule action possible, descendre
+  if (voiture.conduite) {
+    zoneActive = { texte: 'Au volant : <kbd>Z</kbd>/<kbd>S</kbd> avancer/reculer · <kbd>Q</kbd>/<kbd>D</kbd> tourner · <kbd>E</kbd> descendre', action: descendreVoiture };
+    elIndice.innerHTML = zoneActive.texte; elIndice.classList.remove('cache');
+    return;
+  }
+  // Rappel du cheminement quand le géomètre porte le matériel de nivellement (pas dans le cabinet)
+  const interieur = estInterieur(joueur.x);
+  const chem = interieur ? null : cheminementActif();
   majMiresNiv(chem);
   let rappelNiveau = null;
   if (chem && ['niveau', 'trepied', 'mire'].every(id => sac.has(id))) {
@@ -3457,10 +4493,10 @@ function majZones() {
       action: null,
     };
   }
-  zoneActive = zoneMission(pointMissionProche(false))
+  zoneActive = (interieur ? null : zoneMission(pointMissionProche(false)))
     || ZONES.find(z => Math.hypot(joueur.x - z.lieu.x, joueur.z - z.lieu.z) < z.rayon)
     || rappelNiveau
-    || zoneMission(pointMissionProche(true));
+    || (interieur ? null : zoneMission(pointMissionProche(true)));
   if (zoneActive) {
     elIndice.innerHTML = typeof zoneActive.texte === 'function' ? zoneActive.texte() : zoneActive.texte;
     elIndice.classList.remove('cache');
@@ -3469,11 +4505,150 @@ function majZones() {
 function interagir() { if (zoneActive && zoneActive.action) zoneActive.action(); }
 
 // =====================================================================
+// === CABINET : ENTRER, SORTIR ===
+// =====================================================================
+function entrerCabinet() {
+  const I = MONDE.interieur;
+  joueur.destination = null;
+  Object.assign(joueur, { x: I.sortie.x - 1.2, z: I.sortie.z, angle: -Math.PI / 2 });
+  Object.assign(cam, { yaw: Math.PI / 2, pitch: 0.3, distance: 4.5 });
+  afficherMessage('Bienvenue au cabinet : matériel sur les étagères, ordinateur sur le bureau.', 3000);
+}
+function sortirCabinet() {
+  const P = MONDE.cabinet.porte;
+  Object.assign(joueur, { x: P.x + 5.5, z: P.z + 1, angle: 1.26 });
+  // Vue vers l'est-nord-est (gisement ≈ 80 gon) : la voiture, le chemin, le village et le château d'eau
+  Object.assign(cam, { yaw: -1.26, pitch: 0.2, distance: 6 });
+  if (!sac.size) afficherMessage('Tu sors les mains vides ? Le matériel est sur les étagères du cabinet.', 3500);
+}
+
+// =====================================================================
+// === VOITURE DU CABINET (conduisible) ===
+// =====================================================================
+const voiture = { conduite: false, vitesse: 0 };
+const VOITURE_VMAX = 18, VOITURE_VMAX_ARRIERE = 6, RAYON_VOITURE = 1.3;
+
+function monterVoiture() {
+  voiture.conduite = true; voiture.vitesse = 0;
+  joueur.destination = null;
+  geometre.groupe.visible = false; geometre.ombre.visible = false;
+  cam.distance = 12; cam.pitch = 0.3;
+  afficherMessage('Au volant ! Z/S pour avancer ou reculer, Q/D pour tourner, E pour descendre.', 3500);
+}
+function descendreVoiture() {
+  const V = MONDE.camion, a = V.angle;
+  voiture.conduite = false; voiture.vitesse = 0;
+  // On descend côté conducteur (à gauche du véhicule)
+  const p = { x: V.x - Math.sin(a) * 2.6, z: V.z - Math.cos(a) * 2.6 };
+  resoudreCollisions(p);
+  Object.assign(joueur, p);
+  geometre.groupe.visible = true; geometre.ombre.visible = true;
+  cam.distance = 7;
+}
+
+// Le véhicule peut-il occuper cette position ? (obstacles, eau, limites du chantier)
+function positionVoitureLibre(x, z) {
+  if (Math.abs(x) > LIMITE_JOUEUR || Math.abs(z) > LIMITE_JOUEUR) return 'limite';
+  for (const c of obstaclesCercles) if (c !== MONDE.camion.obstacle && Math.hypot(x - c.x, z - c.z) < c.r + RAYON_VOITURE) return 'obstacle';
+  for (const b of obstaclesBoites) {
+    const nx = clamp(x, b.minX, b.maxX), nz = clamp(z, b.minZ, b.maxZ);
+    if (Math.hypot(x - nx, z - nz) < RAYON_VOITURE) return 'obstacle';
+  }
+  const sol = altitudeMarche(x, z);
+  if (Math.abs(x - xRiviere(z)) < 6 && sol < niveauEau(z) + 0.4) return 'eau';
+  const E = MONDE.etang;
+  if (Math.hypot(x - E.x, z - E.z) < E.rayon * 1.3 && sol < E.niveau + 0.4) return 'eau';
+  return null;
+}
+
+function piloterVoiture(dt) {
+  const V = MONDE.camion;
+  const avant = (appuye('KeyW', 'ArrowUp') ? 1 : 0) - (appuye('KeyS', 'ArrowDown') ? 1 : 0);
+  const tourne = (appuye('KeyA', 'ArrowLeft') ? 1 : 0) - (appuye('KeyD', 'ArrowRight') ? 1 : 0);
+  // Accélération, freinage, frottements
+  if (avant > 0) voiture.vitesse += (voiture.vitesse < 0 ? 16 : 7) * dt;
+  else if (avant < 0) voiture.vitesse -= (voiture.vitesse > 0 ? 16 : 5) * dt;
+  else voiture.vitesse *= Math.max(0, 1 - 1.8 * dt);
+  voiture.vitesse = clamp(voiture.vitesse, -VOITURE_VMAX_ARRIERE, VOITURE_VMAX);
+  // Direction : on ne tourne qu'en roulant (comme une vraie voiture)
+  V.angle += tourne * 1.4 * dt * clamp(voiture.vitesse / 5, -1, 1);
+  const fx = Math.cos(V.angle), fz = -Math.sin(V.angle);   // avant du véhicule (axe +x local)
+  const nx = V.x + fx * voiture.vitesse * dt, nz = V.z + fz * voiture.vitesse * dt;
+  const probleme = Math.abs(voiture.vitesse) > 0.01 ? positionVoitureLibre(nx + fx * 1.5 * Math.sign(voiture.vitesse), nz + fz * 1.5 * Math.sign(voiture.vitesse)) : null;
+  if (probleme) {
+    if (Math.abs(voiture.vitesse) > 2) afficherMessage(probleme === 'eau' ? 'La voiture ne passe pas dans l\'eau : prends le pont !' : probleme === 'limite' ? 'Limite du chantier.' : 'Attention, obstacle !', 1500);
+    voiture.vitesse = 0;
+  } else { V.x = nx; V.z = nz; }
+  // Position, inclinaison selon le relief (tangage et roulis)
+  const g = V.groupe;
+  const hAv = altitudeMarche(V.x + fx * 2, V.z + fz * 2), hAr = altitudeMarche(V.x - fx * 2, V.z - fz * 2);
+  const hG = altitudeMarche(V.x - Math.sin(V.angle) * 0.9, V.z - Math.cos(V.angle) * 0.9), hD = altitudeMarche(V.x + Math.sin(V.angle) * 0.9, V.z + Math.cos(V.angle) * 0.9);
+  g.rotation.order = 'YZX';
+  g.rotation.set(Math.atan2(hD - hG, 1.8) * -1, V.angle, Math.atan2(hAv - hAr, 4));
+  g.position.set(V.x, (hAv + hAr) / 2, V.z);
+  V.obstacle.x = V.x + fx * 0.35; V.obstacle.z = V.z + fz * 0.35;
+  // Le géomètre est dans la voiture : caméra derrière le véhicule
+  joueur.x = V.x; joueur.z = V.z;
+  const yawCible = Math.atan2(-fx, -fz);
+  if (Math.abs(voiture.vitesse) > 0.5) {
+    let d = yawCible - cam.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
+    cam.yaw += d * Math.min(1, dt * 2.5);
+  }
+}
+
+// =====================================================================
+// === ORDINATEUR DU CABINET : vider les données du terrain ===
+// =====================================================================
+// Une mission terminée ne compte dans le bilan qu'une fois ses données vidées sur l'ordinateur.
+let missionsVidees = new Set();
+let ordinateurOuvert = false;
+const SOURCES_DONNEES = {
+  1: 'carnet de terrain (lectures sur mire)', 5: 'carnet de terrain (lectures sur mire)',
+  2: 'carnet électronique du GNSS', 3: 'mémoire de la station totale', 6: 'mémoire de la station totale',
+  7: 'mémoire de la station totale', 8: 'mémoire de la station totale', 9: 'mémoire de la station totale',
+  4: 'carnet de terrain (distances)', 11: 'mémoire de la station totale', 12: 'plan de marquage du réseau', 13: 'carte mémoire du drone (photos)', 10: 'carnet de terrain (croquis coté de la grange)',
+};
+const missionsAVider = () => MISSIONS.filter(m => missionActive(m.id) && missionFinie(m.id) && !missionsVidees.has(m.id));
+
+function ouvrirOrdinateur() {
+  ordinateurOuvert = true; touches.clear();
+  const aVider = missionsAVider();
+  const el = document.getElementById('contenuOrdinateur');
+  el.innerHTML = aVider.length
+    ? `<p>Données de terrain en attente de transfert :</p><ul>${aVider.map(m => `<li><b>Mission ${m.libelle}</b> — ${m.titre.replace('Bonus : ', '')} <small>(${SOURCES_DONNEES[m.id]})</small></li>`).join('')}</ul>
+       <div class="barre" style="height:14px"><div id="barreTransfert"></div></div><p id="etatTransfert"></p>
+       <button class="bouton" id="boutonVider">Vider les données (E)</button>`
+    : `<p>Aucune donnée en attente.</p><p>${missionsVidees.size ? `Missions déjà traitées : ${[...missionsVidees].map(id => MISSION[id].libelle).join(', ')}.` : 'Termine une mission sur le terrain, puis reviens vider tes données ici.'}</p>`;
+  const b = document.getElementById('boutonVider');
+  if (b) b.addEventListener('click', viderDonnees);
+  document.getElementById('ordinateur').classList.remove('cache');
+}
+function fermerOrdinateur() { ordinateurOuvert = false; document.getElementById('ordinateur').classList.add('cache'); }
+function viderDonnees() {
+  const b = document.getElementById('boutonVider');
+  if (!b || b.disabled) return;
+  b.disabled = true;
+  const aVider = missionsAVider(), barre = document.getElementById('barreTransfert');
+  let k = 0;
+  const pas = () => {
+    k++;
+    barre.style.width = `${Math.round(k / 20 * 100)}%`; barre.style.background = '#3c9a4f';
+    document.getElementById('etatTransfert').textContent = k < 20 ? 'Transfert et calculs en cours…' : '';
+    if (k < 20) { setTimeout(pas, 60); return; }
+    aVider.forEach(m => missionsVidees.add(m.id));
+    document.getElementById('etatTransfert').innerHTML = `<span class="ok">✔ ${aVider.length} mission${aVider.length > 1 ? 's' : ''} traitée${aVider.length > 1 ? 's' : ''} : les résultats comptent maintenant dans ton bilan (B).</span>`;
+    sauvegarder(false);
+  };
+  pas();
+}
+document.getElementById('boutonFermerOrdinateur').addEventListener('click', fermerOrdinateur);
+
+// =====================================================================
 // === ÉCRAN DU CAMION ET INVENTAIRE ===
 // =====================================================================
 let camionOuvert = false;
 let sacAOuverture = '';          // contenu du sac à l'ouverture (pour détecter un changement)
-const statsCamion = { premierDepart: false, retours: 0 };   // retours au camion pour changer de matériel (score, étape F)
+const statsCamion = { premierDepart: false, retours: 0 };   // retours au cabinet pour changer de matériel (score, étape F)
 
 const elGrille = document.getElementById('grilleMateriel');
 // Une carte cliquable par objet du catalogue
@@ -3512,7 +4687,7 @@ function majInventaire() {
   // Panneau « Matériel emporté »
   document.getElementById('sacListe').innerHTML = sac.size
     ? MATERIEL.filter(o => sac.has(o.id)).map(o => `<span class="petiteIcone">${o.icone}</span>${o.nom}`).join('<br>')
-    : '<span class="vide">Rien pour l\'instant : va au camion.</span>';
+    : '<span class="vide">Rien pour l\'instant : va aux étagères du cabinet.</span>';
   majBarre(document.getElementById('sacBarre'), charge);
   document.getElementById('sacTexte').textContent = `${kg(charge)} / ${CHARGE_MAX} kg · vitesse ${Math.round(facteurCharge() * 100)} %`;
   // Matériel visible sur le personnage
@@ -3535,7 +4710,7 @@ function fermerCamion() {
     if (statsCamion.premierDepart) statsCamion.retours++;
     else if (sac.size) statsCamion.premierDepart = true;
   }
-  if (!sac.size) afficherMessage('Tu pars les mains vides ? Le matériel est dans le camion.');
+  if (!sac.size) afficherMessage('Tu pars les mains vides ? Le matériel est sur les étagères du cabinet.');
   else if (!sac.has('carnet')) afficherMessage('Attention : sans carnet de terrain, tu ne pourras pas noter tes mesures !', 3500);
   else afficherMessage(`En route ! Charge : ${kg(chargeSac())}`);
 }
@@ -3547,22 +4722,31 @@ majInventaire();
 // =====================================================================
 // === DÉPLACEMENT DU GÉOMÈTRE ===
 // =====================================================================
-const VITESSE_MARCHE = 5.5, VITESSE_COURSE = 9;   // m/s (accélérées pour le confort de jeu)
+const VITESSE_MARCHE = 8, VITESSE_COURSE = 13;   // m/s (accélérées pour le confort de jeu, à la demande du professeur)
 let dansLEauAvant = false;
 
 function deplacer(dt) {
+  if (voiture.conduite) { if (dt > 0) piloterVoiture(dt); return; }
   const avant = (appuye('KeyW', 'ArrowUp') ? 1 : 0) - (appuye('KeyS', 'ArrowDown') ? 1 : 0);
   const lateral = (appuye('KeyD', 'ArrowRight') ? 1 : 0) - (appuye('KeyA', 'ArrowLeft') ? 1 : 0);
   // Directions relatives à la caméra
   const fx = -Math.sin(cam.yaw), fz = -Math.cos(cam.yaw);
   const rx = Math.cos(cam.yaw), rz = -Math.sin(cam.yaw);
   let dx = fx * avant + rx * lateral, dz = fz * avant + rz * lateral;
+  // Déplacement automatique vers le point cliqué sur la mini-carte (annulé dès qu'on utilise le clavier)
+  let auto = false;
+  if (dx || dz) joueur.destination = null;
+  else if (joueur.destination && dt > 0) {
+    const D = joueur.destination, reste = Math.hypot(D.x - joueur.x, D.z - joueur.z);
+    if (reste < 1.2) { joueur.destination = null; afficherMessage('Arrivé à destination.', 1200); }
+    else { dx = (D.x - joueur.x) / reste; dz = (D.z - joueur.z) / reste; auto = true; }
+  }
   const norme = Math.hypot(dx, dz);
   let vitesseReelle = 0;
 
   if (norme > 0) {
     dx /= norme; dz /= norme;
-    let v = appuye('ShiftLeft', 'ShiftRight') ? VITESSE_COURSE : VITESSE_MARCHE;
+    let v = appuye('ShiftLeft', 'ShiftRight') || auto ? VITESSE_COURSE : VITESSE_MARCHE;
     // Plus le sac est lourd, plus on avance lentement
     v *= facteurCharge();
     // Ralentissement en montée
@@ -3577,13 +4761,23 @@ function deplacer(dt) {
 
     const p = { x: joueur.x + dx * v * dt, z: joueur.z + dz * v * dt };
     resoudreCollisions(p);
-    if (Math.abs(p.x) > LIMITE_JOUEUR || Math.abs(p.z) > LIMITE_JOUEUR) {
+    if (estInterieur(joueur.x)) {
+      // Dans le cabinet : on reste entre les murs
+      const I = MONDE.interieur;
+      p.x = clamp(p.x, I.x - I.dx + 0.4, I.x + I.dx - 0.4);
+      p.z = clamp(p.z, I.z - I.dz + 0.4, I.z + I.dz - 0.4);
+    } else if (Math.abs(p.x) > LIMITE_JOUEUR || Math.abs(p.z) > LIMITE_JOUEUR) {
       p.x = clamp(p.x, -LIMITE_JOUEUR, LIMITE_JOUEUR);
       p.z = clamp(p.z, -LIMITE_JOUEUR, LIMITE_JOUEUR);
       afficherMessage('Limite du chantier : fais demi-tour.', 1500);
     }
     vitesseReelle = Math.hypot(p.x - joueur.x, p.z - joueur.z) / dt;
     joueur.x = p.x; joueur.z = p.z;
+    // Bloqué par un obstacle pendant le déplacement automatique : on s'arrête
+    if (auto) {
+      joueur.bloque = vitesseReelle < 0.5 ? (joueur.bloque || 0) + dt : 0;
+      if (joueur.bloque > 0.6) { joueur.destination = null; joueur.bloque = 0; afficherMessage('Un obstacle bloque le passage : contourne-le avec Z Q S D.', 3000); }
+    }
 
     // Rotation progressive du personnage vers sa direction de marche
     const cible = Math.atan2(dx, dz);
@@ -3619,8 +4813,19 @@ function majCamera() {
   const cx = cibleCamera.x + Math.sin(cam.yaw) * horiz;
   const cz = cibleCamera.z + Math.cos(cam.yaw) * horiz;
   let cy = cibleCamera.y + Math.sin(cam.pitch) * cam.distance;
+  if (estInterieur(joueur.x)) {
+    // Dans le cabinet, la caméra reste entre les murs, le sol et le plafond
+    const I = MONDE.interieur;
+    camera.position.set(clamp(cx, I.x - I.dx + 0.3, I.x + I.dx - 0.3), clamp(cy, I.y + 0.4, I.y + I.h - 0.2), clamp(cz, I.z - I.dz + 0.3, I.z + I.dz - 0.3));
+    camera.lookAt(cibleCamera);
+    return;
+  }
   cy = Math.max(cy, hauteurSol(cx, cz) + 0.5);  // la caméra ne passe pas sous le sol
   camera.position.set(cx, cy, cz);
+  // La caméra ne traverse pas le cabinet : elle se rapproche du géomètre
+  const C = MONDE.cabinet, dansCabinet = p => Math.abs(p.x - C.x) < C.dx + 0.4 && Math.abs(p.z - C.z) < C.dz + 0.4 && p.y < hauteurSol(C.x, C.z) + C.hMurs + 0.6;
+  for (let t = 1; t > 0.15 && dansCabinet(camera.position); t -= 0.05)
+    camera.position.lerpVectors(cibleCamera, new THREE.Vector3(cx, cy, cz), t);
   camera.lookAt(cibleCamera);
 }
 
@@ -3629,6 +4834,10 @@ function majCamera() {
 // =====================================================================
 const elCoords = document.getElementById('coords');
 function majCoordonnees() {
+  if (estInterieur(joueur.x)) {
+    elCoords.innerHTML = '<b>Cabinet de géomètres-experts</b>Matériel : étagères · Données : ordinateur<br>Sortie : porte à l\'Est';
+    return;
+  }
   const { E, N } = versLambert(joueur.x, joueur.z);
   elCoords.innerHTML =
     `<b>Position du géomètre (Lambert 93)</b>` +
@@ -3649,7 +4858,7 @@ function boucle() {
   if (enJeu) {
     deplacer(dt);
     chronoCoords += dt;
-    if (chronoCoords > 0.1) { chronoCoords = 0; majCoordonnees(); majZones(); majMiniCarte(); verifierFinDeJournee(); }
+    if (chronoCoords > 0.1) { chronoCoords = 0; majCoordonnees(); majZones(); majMiniCarte(); majDetecteur(); verifierFinDeJournee(); }
   } else {
     cam.yaw += dt * 0.05;   // lente rotation de présentation derrière l'écran d'accueil
     deplacer(0);
@@ -3672,7 +4881,7 @@ function boucle() {
 // === DÉMARRAGE ===
 // =====================================================================
 window.__jeuPret = true;
-window.JEU = { MONDE, hauteurSol, versLambert, joueur, touches, cam, sac, POINTS_MISSION, verifierMateriel, MISSION, RESULTATS, installerNiveau, tenterMesure, instClavier, dessinerMire, dessinerReticule, echelleMire, get etape() { return etapeCourante; } };   // accès pour le débogage (console F12)
+window.JEU = { MONDE, hauteurSol, versLambert, joueur, touches, cam, sac, POINTS_MISSION, verifierMateriel, MISSION, RESULTATS, installerNiveau, tenterMesure, instClavier, dessinerMire, dessinerReticule, echelleMire, voiture, entrerCabinet, sortirCabinet, monterVoiture, descendreVoiture, ouvrirOrdinateur, viderDonnees, get missionsVidees() { return missionsVidees; }, get etape() { return etapeCourante; } };   // accès pour le débogage (console F12)
 document.getElementById('chargement').classList.add('cache');
 document.getElementById('accueil').classList.remove('cache');
 // Meilleur score déjà obtenu sur cet ordinateur, pour le niveau choisi
@@ -3684,19 +4893,142 @@ function majMeilleurAccueil() {
 }
 document.querySelectorAll('input[name=niveau]').forEach(r => r.addEventListener('change', majMeilleurAccueil));
 majMeilleurAccueil();
+
+// --- Choix des missions de la journée (accueil) ---
+const elChoixMissions = document.getElementById('listeChoixMissions');
+elChoixMissions.innerHTML = MISSIONS.map(m => `<label><input type="checkbox" value="${m.id}" checked>
+  <span class="pastille" style="background:${m.couleur}"></span>${m.libelle === 'bonus' ? 'Bonus' : m.libelle}. ${m.titre.replace('Bonus : ', '')}</label>`).join('');
+const casesMissions = () => [...elChoixMissions.querySelectorAll('input')];
+function majResumeMissions() {
+  const n = casesMissions().filter(c => c.checked).length;
+  document.getElementById('resumeMissions').textContent = `${n} / ${MISSIONS.length}`;
+}
+elChoixMissions.addEventListener('change', majResumeMissions);
+document.querySelectorAll('.boutonsMissions button').forEach(b => b.addEventListener('click', () => {
+  const cases = casesMissions();
+  if (b.dataset.tirage === 'tout') cases.forEach(c => { c.checked = true; });
+  else {
+    // Tirage au hasard parmi les missions principales (le bonus reste coché)
+    const principales = cases.filter(c => c.value !== '4').sort(() => Math.random() - 0.5);
+    principales.forEach((c, i) => { c.checked = i < Number(b.dataset.tirage); });
+  }
+  majResumeMissions();
+}));
+majResumeMissions();
+// Applique le choix ; renvoie false s'il n'y a aucune mission
+function appliquerChoixMissions() {
+  const ids = casesMissions().filter(c => c.checked).map(c => Number(c.value));
+  if (!ids.length) { alert('Choisis au moins une mission pour la journée.'); return false; }
+  missionsChoisies = new Set(ids);
+  MISSIONS_PRINCIPALES = MISSIONS.filter(m => m.id !== 4 && missionActive(m.id)).map(m => m.id);
+  for (const p of POINTS_MISSION) p.balise.visible = !p.fait && missionActive(p.mission);
+  return true;
+}
+
 function demarrerPartie() {
+  if (!appliquerChoixMissions()) { document.getElementById('accueil').classList.remove('cache'); return; }
   document.getElementById('accueil').classList.add('cache');
   niveau = NIVEAUX[document.querySelector('input[name=niveau]:checked').value];
   debutPartie = performance.now();
   document.querySelector('#titre span').textContent = `Niveau ${niveau.nom}`;
-  cam.yaw = Math.atan2(-directionDepart.x, -directionDepart.y);
-  Object.assign(cam, CAMERA_DEPART);
+  // La journée commence à l'intérieur du cabinet, face aux étagères de matériel
+  const I = MONDE.interieur;
+  Object.assign(joueur, { x: I.x - 1.8, z: I.z + 1.6, angle: Math.PI, destination: null });
+  Object.assign(cam, { yaw: 0, pitch: 0.32, distance: 4.5 });
   enJeu = true;
   majCoordonnees();
   ouvrirOrdre();   // l'ordre de mission s'affiche au départ
-  afficherMessage('Lis ton ordre de mission, puis choisis ton matériel au camion.', 4000);
+  afficherMessage('Tu es au cabinet : lis ton ordre de mission, puis prends ton matériel sur les étagères.', 4000);
 }
 document.getElementById('boutonCommencer').addEventListener('click', demarrerPartie);
+
+// =====================================================================
+// === SAUVEGARDE (dans le navigateur, sans aucune donnée personnelle) ===
+// =====================================================================
+const CLE_SAUVEGARDE = 'geometreTopo.sauvegarde';
+function lireSauvegarde() {
+  try { return JSON.parse(localStorage.getItem(CLE_SAUVEGARDE)); } catch (e) { return null; }
+}
+function sauvegarder(afficher) {
+  if (!enJeu) return;
+  const etat = {
+    version: 1, date: new Date().toISOString(),
+    niveau: Object.keys(NIVEAUX).find(k => NIVEAUX[k] === niveau),
+    missions: [...missionsChoisies],
+    joueur: { x: joueur.x, z: joueur.z, angle: joueur.angle },
+    sac: [...sac], tempsEcoule: performance.now() - debutPartie,
+    points: POINTS_MISSION.map(p => ({ fait: p.fait, essais: p.essaisMaterielInadapte })),
+    cheminements: CHEMINEMENTS.map(c => ({ station: c.station, stations: c.stations })),
+    resultats: Object.fromEntries(Object.entries(RESULTATS).filter(([k]) => k !== 'cheminements')),
+    statsCamion: { ...statsCamion }, toutFiniAnnonce,
+    missionsVidees: [...missionsVidees],
+    voiture: { x: MONDE.camion.x, z: MONDE.camion.z, angle: MONDE.camion.angle },
+    reseau: { active: detection.active, marques: detection.marques, vus: MONDE.reseau.trace.map(p => p.vu ? 1 : 0) },
+  };
+  try {
+    localStorage.setItem(CLE_SAUVEGARDE, JSON.stringify(etat));
+    if (afficher) afficherMessage('Partie sauvegardée sur cet ordinateur.', 2000);
+  } catch (e) {
+    if (afficher) afficherMessage('Sauvegarde impossible : le navigateur bloque le stockage.', 3000);
+  }
+}
+
+function reprendrePartie() {
+  const s = lireSauvegarde();
+  if (!s) return;
+  // Niveau et missions de la partie sauvegardée
+  const radio = document.querySelector(`input[name=niveau][value=${s.niveau}]`);
+  if (radio) radio.checked = true;
+  casesMissions().forEach(c => { c.checked = s.missions.includes(Number(c.value)); });
+  demarrerPartie();
+  fermerOrdre();
+  debutPartie = performance.now() - s.tempsEcoule;
+  Object.assign(joueur, s.joueur);
+  sac.clear(); s.sac.forEach(id => OBJET[id] && sac.add(id)); majInventaire();
+  s.points.forEach((e, i) => { const p = POINTS_MISSION[i]; if (!p) return; p.essaisMaterielInadapte = e.essais; if (e.fait) marquerFait(p); });
+  s.cheminements.forEach((e, i) => { const c = CHEMINEMENTS[i]; if (c) { c.station = e.station; c.stations = e.stations; } });
+  Object.assign(RESULTATS, s.resultats);
+  Object.assign(statsCamion, s.statsCamion);
+  toutFiniAnnonce = s.toutFiniAnnonce;
+  missionsVidees = new Set(s.missionsVidees || []);
+  if (s.reseau) {
+    // Réseau : générateur, marques de peinture et tracé déjà révélé
+    detection.active = s.reseau.active;
+    const pos = { x: joueur.x, z: joueur.z };
+    const sacAvant = new Set(sac); sac.add('detecteur'); sac.add('bombe');
+    for (const m of s.reseau.marques) { Object.assign(joueur, { x: m.x, z: m.z }); const actif = detection.active; detection.active = true; marquerReseau(); detection.active = actif; }
+    sac.clear(); sacAvant.forEach(id => sac.add(id));
+    Object.assign(joueur, pos);
+    s.reseau.vus.forEach((v, i) => { const p = MONDE.reseau.trace[i]; if (p && v) { p.vu = true; p.mesh.visible = true; } });
+  }
+  if (s.voiture) {
+    // Voiture garée là où on l'avait laissée
+    Object.assign(MONDE.camion, { x: s.voiture.x, z: s.voiture.z, angle: s.voiture.angle });
+    voiture.conduite = true; piloterVoiture(0.0001); voiture.conduite = false;
+    Object.assign(joueur, s.joueur);
+  }
+  majCoordonnees();
+  afficherMessage('Partie reprise là où tu l\'avais laissée !', 3000);
+}
+
+// Bouton « Continuer » sur l'accueil si une partie est sauvegardée
+{
+  const s = lireSauvegarde();
+  if (s) {
+    const nb = s.points.filter(p => p.fait).length, total = s.points.length;
+    const quand = new Date(s.date).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+    const b = document.createElement('button');
+    b.className = 'bouton'; b.id = 'boutonReprendre';
+    b.style.cssText = 'width:100%;margin-bottom:8px;background:#24527a';
+    b.textContent = `Continuer la partie sauvegardée (${quand} · niveau ${NIVEAUX[s.niveau] ? NIVEAUX[s.niveau].nom : ''} · ${nb} point${nb > 1 ? 's' : ''} mesuré${nb > 1 ? 's' : ''})`;
+    b.addEventListener('click', reprendrePartie);
+    document.querySelector('#accueil .boutons').before(b);
+  }
+}
+document.getElementById('boutonSauvegarder').addEventListener('click', () => sauvegarder(true));
+// Sauvegarde automatique : toutes les 20 s et en quittant la page
+setInterval(() => sauvegarder(false), 20000);
+addEventListener('beforeunload', () => sauvegarder(false));
 
 // =====================================================================
 // === TUTORIEL (facultatif, au début ou depuis l'ordre de mission) ===
@@ -3710,22 +5042,25 @@ const ETAPES_TUTO = [
     <p><kbd>Z</kbd> <kbd>Q</kbd> <kbd>S</kbd> <kbd>D</kbd> (ou les flèches) : marcher · <kbd>Maj</kbd> maintenue : courir.</p>
     <p><b>Clic maintenu + souris</b> : tourner la caméra · <b>molette</b> : zoomer.</p>
     <p>En haut, la <b>boussole</b> indique la direction et la distance du point le plus proche à mesurer (avec son gisement en grades).
-    En bas à droite, la <b>mini-carte</b> montre tous les points : ils passent au vert une fois mesurés.</p>` },
+    En bas à droite, la <b>mini-carte</b> montre tous les points : ils passent au vert une fois mesurés.
+    <b>Clique sur la mini-carte</b> : ton géomètre s'y rend tout seul.</p>
+    <p>La partie est <b>sauvegardée automatiquement</b> : tu pourras la continuer plus tard depuis l'accueil.</p>` },
   { titre: '2. Lire l\'ordre de mission', html: `
     <p>Touche <kbd>M</kbd> : l'<b>ordre de mission</b> liste les missions, la méthode à suivre et les tolérances de ton niveau.</p>
     <p>Sur le terrain, chaque point à mesurer est signalé par une <b>balise de couleur</b> (une couleur par mission).</p>` },
-  { titre: '3. Choisir son matériel au camion', html: `
-    <p>Va au <b>camion blanc</b> et appuie sur <kbd>E</kbd>. Clique sur le matériel pour le prendre ou le reposer.</p>
-    <p>⚖️ Charge maximale : <b>15 kg</b>. Plus tu es chargé, plus tu marches lentement.</p>
-    <p>📒 N'oublie jamais le <b>carnet de terrain</b> : sans lui, tes mesures sont perdues ! Avec un matériel inadapté, le jeu t'explique pourquoi et tu perds des points.</p>` },
+  { titre: '3. Le cabinet et la voiture', html: `
+    <p>La journée commence au <b>cabinet de géomètres-experts</b>. Devant les <b>étagères</b>, appuie sur <kbd>E</kbd> et clique sur le matériel pour le prendre ou le reposer.</p>
+    <p>⚖️ Charge maximale : <b>15 kg</b>. 📒 N'oublie jamais le <b>carnet de terrain</b>, ni la <b>batterie</b> pour la station totale et le GNSS !</p>
+    <p>🚐 Dehors, la <b>voiture du cabinet</b> t'emmène sur les chantiers : <kbd>E</kbd> pour monter ou descendre, <kbd>Z</kbd>/<kbd>S</kbd> pour avancer ou reculer, <kbd>Q</kbd>/<kbd>D</kbd> pour tourner.</p>
+    <p>💻 Une mission terminée, reviens au cabinet <b>vider tes données sur l'ordinateur</b> : sans cela, elle ne compte pas dans la note.</p>` },
   { titre: '4. Mesurer', html: `
     <p>Près d'un point à mesurer, appuie sur <kbd>E</kbd>. Pour un <b>nivellement</b>, installe le niveau <b>entre</b> deux points avec <kbd>T</kbd> :
     un bandeau t'indique si l'emplacement convient (portées, visées).</p>
     <p>Chaque mesure suit les gestes du métier :</p>
-    <ul><li><b>Calage</b> : ramène la bulle dans le cercle avec les flèches, puis <kbd>Entrée</kbd>.</li>
-    <li><b>Visée</b> : tourne la lunette (flèches ou souris, <kbd>Maj</kbd> = fin) et fais la mise au point (molette).
+    <ul><li><b>Calage</b> : ramène la bulle dans le cercle avec <kbd>Z</kbd> <kbd>Q</kbd> <kbd>S</kbd> <kbd>D</kbd>, puis <kbd>R</kbd>.</li>
+    <li><b>Visée</b> : tourne la lunette (<kbd>Z</kbd> <kbd>Q</kbd> <kbd>S</kbd> <kbd>D</kbd> ou souris, <kbd>Maj</kbd> = fin) et fais la mise au point (molette, ou <kbd>Z</kbd> <kbd>S</kbd> au niveau).
     Station totale : <kbd>Espace</kbd> passe du <b>collimateur</b> (vue large) à la <b>lunette</b>.</li>
-    <li><b>Lecture</b> : tape ta valeur, puis <kbd>Entrée</kbd>. <kbd>Échap</kbd> abandonne la mesure.</li></ul>` },
+    <li><b>Relever</b> : <kbd>R</kbd> enregistre la mesure (station totale, GNSS) ; pour la mire, tape ta lecture puis <kbd>Entrée</kbd>. <kbd>Échap</kbd> abandonne la mesure.</li></ul>` },
   { titre: '5. Lire la mire', html: `
     <p>Lis la mire au <b>fil niveleur</b>, le trait horizontal central :</p>
     <ul><li>le <b>chiffre</b> donne les décimètres : sa base est posée sur le trait du décimètre (« 09 » = 0,90 m) ;</li>
@@ -3762,7 +5097,10 @@ function fermerTuto() {
 }
 function tutoSuivant() { if (etapeTuto < ETAPES_TUTO.length - 1) { etapeTuto++; afficherEtapeTuto(); } else fermerTuto(); }
 function tutoPrecedent() { if (etapeTuto > 0) { etapeTuto--; afficherEtapeTuto(); } }
-document.getElementById('boutonTutoriel').addEventListener('click', () => ouvrirTuto(true));
+document.getElementById('boutonTutoriel').addEventListener('click', () => {
+  if (casesMissions().some(c => c.checked)) ouvrirTuto(true);
+  else alert('Choisis au moins une mission pour la journée.');
+});
 document.getElementById('boutonTutoOrdre').addEventListener('click', () => ouvrirTuto(false));
 document.getElementById('tutoSuivant').addEventListener('click', tutoSuivant);
 document.getElementById('tutoPrecedent').addEventListener('click', tutoPrecedent);
